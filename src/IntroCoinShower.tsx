@@ -31,10 +31,10 @@ export default function IntroCoinShower({ onDone }: { onDone?: () => void }) {
 
   // A jittered, brick-offset grid so the coins blanket the screen at the peak.
   const coins = useMemo<Coin[]>(() => {
-    const cols = Math.max(5, Math.min(9, Math.round(width / 80)));
+    const cols = Math.max(6, Math.min(10, Math.round(width / 70)));
     const spacing = width / cols;
-    const base = spacing * 1.25;
-    const rows = Math.max(6, Math.min(16, Math.ceil(height / spacing) + 2));
+    const base = spacing * 1.7; // big overlap so the coins fully blanket the screen
+    const rows = Math.max(8, Math.min(18, Math.ceil(height / spacing) + 3));
     const out: Coin[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {

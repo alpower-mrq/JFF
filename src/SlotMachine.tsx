@@ -37,7 +37,7 @@ const JACKPOT_SOUND = require('../assets/jackpot.mp3');
 const INTRO_SOUND = require('../assets/MrQ.wav');
 const BG_SOUND = require('../assets/bgGrils.mp3');
 const SCROLL_START = 2.3; // skip scrolling.mp3's silent slow-start (seconds)
-const BG_VOLUME = 0.3; // background music sits low under everything
+const BG_VOLUME = 0.15; // background music sits low under everything
 
 // MrQ's condensed display font (loaded in App.tsx via expo-font).
 const FONT = 'FormulaCondensed-Bold';
@@ -288,7 +288,7 @@ export default function SlotMachine() {
     Animated.timing(reveal, {
       toValue: 1,
       duration: 900,
-      delay: 1000, // hold hidden while the shower covers the screen
+      delay: 1100, // stay hidden while the shower covers the screen, then emerge as it clears
       easing: Easing.out(Easing.quad),
       useNativeDriver: USE_NATIVE,
     }).start();
@@ -413,7 +413,7 @@ export default function SlotMachine() {
 
           {/* spins left + progress bar, on the base panel */}
           <ShellArea rect={SPINS_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.05, letterSpacing: 1.5, marginBottom: shellH * 0.014 }}>
+            <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.072, letterSpacing: 1.5, marginBottom: shellH * 0.014 }}>
               {spinsLeft}  SPINS LEFT
             </Text>
             <View style={{ width: '90%', height: shellH * 0.03, borderRadius: 999, backgroundColor: TRACK, overflow: 'hidden' }}>
@@ -450,6 +450,10 @@ export default function SlotMachine() {
         centerY={originY}
       />
       <TopBar total={total} />
+      </Animated.View>
+
+      {/* page-load welcome: a full-screen coin shower that clears to reveal the machine */}
+      <IntroCoinShower />
     </View>
   );
 }
