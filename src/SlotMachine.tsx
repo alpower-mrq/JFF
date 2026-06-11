@@ -554,9 +554,10 @@ export default function SlotMachine() {
   );
 }
 
-// Game assets — defined at module level so Metro resolves them at bundle time.
+const FEATURED_GAME = require('../assets/image 37.png');
+
+// Carousel games — excludes the featured tile.
 const GAMES = [
-  require('../assets/image 37.png'),
   require('../assets/image 38.png'),
   require('../assets/image 39.png'),
   require('../assets/image 40.png'),
@@ -628,7 +629,7 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
 
       {/* ── Static featured image ── */}
       <Image
-        source={GAMES[0]}
+        source={FEATURED_GAME}
         style={{ width: featW, height: featH, alignSelf: 'center', borderRadius: 22 }}
         resizeMode="cover"
       />
