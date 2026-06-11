@@ -22,6 +22,7 @@ import SpinButtonKey from '../assets/spin_button_key.svg';
 import Sunburst from '../assets/sunburst.svg';
 import CloseIcon from '../assets/close.svg';
 import LetsGoIcon from '../assets/letsgo.svg';
+import BottomClouds from '../assets/bottom-bg-clouds.svg';
 import { useAudioPlayer } from 'expo-audio';
 import Reel, { ReelHandle, Triple } from './Reel';
 import CoinCelebration from './CoinCelebration';
@@ -536,6 +537,9 @@ export default function SlotMachine() {
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
           <GamesPage shellW={shellW} />
+          <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
+            <BottomClouds width={width} height={width / (375 / 183)} />
+          </View>
         </View>
 
       </Animated.View>
