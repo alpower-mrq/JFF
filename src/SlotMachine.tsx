@@ -564,21 +564,19 @@ const GAMES = [
 
 function GamesPage({ shellW, width }: { shellW: number; width: number }) {
   const N = GAMES.length;
-  // Triple the array so we can loop infinitely in both directions.
   const TRIPLE = [...GAMES, ...GAMES, ...GAMES];
 
-  const CARD_W = width * 0.80;
-  const CARD_H = CARD_W;         // square cards
+  // Carousel tiles: big enough to swipe, neighbours peek on both sides.
+  const CARD_W = width * 0.62;
+  const CARD_H = CARD_W;
   const GAP    = 14;
   const STEP   = CARD_W + GAP;
-  // Pad on each side so the active card is centred with neighbours peeking.
   const CENTER = (width - CARD_W) / 2;
-  const START  = N;              // begin at index N = first item of middle copy
+  const START  = N;
 
   const tx  = useRef(new Animated.Value(CENTER - START * STEP)).current;
   const cur = useRef(START);
 
-  // Refs so PanResponder callbacks always read current layout values.
   const stepR = useRef(STEP);
   const centR = useRef(CENTER);
   const lenR  = useRef(TRIPLE.length);
@@ -606,7 +604,6 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
         friction: 26,
         useNativeDriver: USE_NATIVE,
       }).start(() => {
-        // Silently jump back to the equivalent position in the middle copy.
         if (next < 2 || next > lenR.current - 3) {
           const mid = ((next % N) + N) % N + N;
           cur.current = mid;
@@ -616,9 +613,8 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
     },
   })).current;
 
-  // Small thumbnail strip — fixed row of all 5 games.
-  const thumbW = (width - 5 * 8) / 4.4;  // ~4 visible + hint of 5th
-  const thumbH = thumbW;
+  const featW = width * 0.88;
+  const featH = featW * 0.60;
 
   return (
     <View style={{ flex: 1, paddingTop: 70 }}>
@@ -629,30 +625,27 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
         Q ARCADE
       </Text>
 
-      {/* ── Infinite carousel ── */}
-      <View style={{ overflow: 'hidden', height: CARD_H }} {...pan.panHandlers}>
-        <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: tx }] }}>
-          {TRIPLE.map((src, i) => (
-            <Image
-              key={i}
-              source={src}
-              style={{ width: CARD_W, height: CARD_H, marginRight: GAP, borderRadius: 22 }}
-              resizeMode="cover"
-            />
-          ))}
-        </Animated.View>
-      </View>
+      {/* ── Static featured image ── */}
+      <Image
+        source={GAMES[0]}
+        style={{ width: featW, height: featH, alignSelf: 'center', borderRadius: 22 }}
+        resizeMode="cover"
+      />
 
-      {/* ── Thumbnail strip ── */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginTop: 18, overflow: 'hidden' }}>
-        {GAMES.map((src, i) => (
-          <Image
-            key={i}
-            source={src}
-            style={{ width: thumbW, height: thumbH, marginRight: 8, borderRadius: 12 }}
-            resizeMode="cover"
-          />
-        ))}
+      {/* ── Swipeable carousel — sits over the clouds ── */}
+      <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 40 }}>
+        <View style={{ overflow: 'hidden', height: CARD_H }} {...pan.panHandlers}>
+          <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: tx }] }}>
+            {TRIPLE.map((src, i) => (
+              <Image
+                key={i}
+                source={src}
+                style={{ width: CARD_W, height: CARD_H, marginRight: GAP, borderRadius: 18 }}
+                resizeMode="cover"
+              />
+            ))}
+          </Animated.View>
+        </View>
       </View>
     </View>
   );
