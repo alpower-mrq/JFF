@@ -572,14 +572,14 @@ export default function SlotMachine() {
   );
 }
 
-const FEATURED_GAME = require('../assets/image 37.png');
+const FEATURED_GAME = require('../assets/game37.png');
 
 // Carousel games — excludes the featured tile.
 const GAMES = [
-  require('../assets/image 38.png'),
-  require('../assets/image 39.png'),
-  require('../assets/image 40.png'),
-  require('../assets/image 41.png'),
+  require('../assets/game38.png'),
+  require('../assets/game39.png'),
+  require('../assets/game40.png'),
+  require('../assets/game41.png'),
 ];
 
 function GamesPage({ shellW, width }: { shellW: number; width: number }) {
