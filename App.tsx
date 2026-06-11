@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   phone: {
     flex: 1,
     width: isWeb ? '100%' : undefined,
-    maxWidth: isWeb ? 430 : undefined,
+    maxWidth: isWeb ? 390 : undefined,
     overflow: isWeb ? 'hidden' : undefined,
   },
 });
