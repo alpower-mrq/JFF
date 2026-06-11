@@ -399,6 +399,7 @@ export default function SlotMachine() {
         <Animated.View style={{
           width: Math.sqrt(width * width + height * height) * 1.1,
           height: Math.sqrt(width * width + height * height) * 1.1,
+          opacity: 0.22,
           transform: [{ rotate: sunRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }],
         }}>
           <Sunburst width="100%" height="100%" />
