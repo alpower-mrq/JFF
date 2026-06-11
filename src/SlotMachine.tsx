@@ -236,7 +236,10 @@ function TopBar({ total }: { total: number }) {
 }
 
 export default function SlotMachine() {
-  const { width, height } = useWindowDimensions();
+  const { width: rawWidth, height } = useWindowDimensions();
+  // On web the app is constrained to 430px — cap width so clouds/sunburst
+  // don't scale with the browser window.
+  const width = Platform.OS === 'web' ? Math.min(rawWidth, 430) : rawWidth;
 
   const shellW = Math.min(width * SHELL_WIDTH_FRACTION, SHELL_MAX_WIDTH);
   const shellH = shellW / SHELL_ASPECT;
