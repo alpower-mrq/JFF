@@ -45,8 +45,8 @@ const LETSGO_ASPECT = 449 / 348;
 type Rect = { x: number; y: number; w: number; h: number };
 
 const SHELL_ASPECT = 356 / 617;
-const SHELL_WIDTH_FRACTION = 0.9;
-const SHELL_MAX_WIDTH = 360;
+const SHELL_WIDTH_FRACTION = 0.82;
+const SHELL_MAX_WIDTH = 330;
 const REEL_WINDOW: Rect = { x: 0.105, y: 0.41, w: 0.79, h: 0.45 };
 const REEL_AREA: Rect   = { x: 0.105, y: 0.41, w: 0.79, h: 0.38 };
 const COIN_AREA: Rect   = { x: 0.1,   y: 0.295, w: 0.8, h: 0.075 };
