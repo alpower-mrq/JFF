@@ -325,10 +325,9 @@ export default function SlotMachine() {
 
   const navigateToGames = () => {
     currentPageRef.current = 1;
-    // Rapid punch down — accelerates into the games world.
     Animated.timing(pageTranslate, {
-      toValue: -height,
-      duration: 220,
+      toValue: -height * 2,
+      duration: 280,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: USE_NATIVE,
     }).start();
@@ -338,7 +337,7 @@ export default function SlotMachine() {
     currentPageRef.current = 0;
     Animated.timing(pageTranslate, {
       toValue: 0,
-      duration: 220,
+      duration: 280,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: USE_NATIVE,
     }).start();
@@ -382,8 +381,8 @@ export default function SlotMachine() {
       // Shoot down + fade simultaneously.
       Animated.parallel([
         Animated.timing(pageTranslate, {
-          toValue: -height,
-          duration: 220,
+          toValue: -height * 2,
+          duration: 280,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: USE_NATIVE,
         }),
@@ -459,8 +458,8 @@ export default function SlotMachine() {
   return (
     <View style={[styles.root, { backgroundColor: SKY }]} {...panResponder.panHandlers}>
 
-      {/* ── Two-page world (slots on top, games below) ── */}
-      <Animated.View style={{ width: '100%', height: height * 2, transform: [{ translateY: pageTranslate }] }}>
+      {/* ── Two-page world: slots → gap → games ── */}
+      <Animated.View style={{ width: '100%', height: height * 3, transform: [{ translateY: pageTranslate }] }}>
 
         {/* ── Page 0: Slot machine ── */}
         <View style={{ height }}>
@@ -530,6 +529,9 @@ export default function SlotMachine() {
             </View>
           )}
         </View>
+
+        {/* Gap — dead space that makes the snap feel like real distance */}
+        <View style={{ height, backgroundColor: SKY }} />
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
