@@ -23,6 +23,7 @@ import Sunburst from '../assets/sunburst.svg';
 import CloseIcon from '../assets/close.svg';
 import LetsGoIcon from '../assets/letsgo.svg';
 import BottomClouds from '../assets/bottom-bg-clouds.svg';
+import CloudTunnel from '../assets/clouds_topbottom.svg';
 import { useAudioPlayer } from 'expo-audio';
 import Reel, { ReelHandle, Triple } from './Reel';
 import CoinCelebration from './CoinCelebration';
@@ -531,8 +532,10 @@ export default function SlotMachine() {
           )}
         </View>
 
-        {/* Gap — doubled so the snap feels like real distance */}
-        <View style={{ height: height * 2, backgroundColor: SKY }} />
+        {/* Gap — cloud tunnel, doubled height for travel distance */}
+        <View style={{ height: height * 2, overflow: 'hidden' }}>
+          <CloudTunnel width={width} height={height * 2} />
+        </View>
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
