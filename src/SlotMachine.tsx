@@ -536,10 +536,11 @@ export default function SlotMachine() {
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
-          <GamesPage shellW={shellW} width={width} />
+          {/* Clouds first so game tiles render on top */}
           <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
             <BottomClouds width={width} height={width / (375 / 183)} />
           </View>
+          <GamesPage shellW={shellW} width={width} />
         </View>
 
       </Animated.View>
@@ -566,8 +567,8 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
   const N = GAMES.length;
   const TRIPLE = [...GAMES, ...GAMES, ...GAMES];
 
-  // Carousel tiles: big enough to swipe, neighbours peek on both sides.
-  const CARD_W = width * 0.62;
+  // Carousel tiles: smaller so neighbours peek clearly on both sides.
+  const CARD_W = width * 0.42;
   const CARD_H = CARD_W;
   const GAP    = 14;
   const STEP   = CARD_W + GAP;
@@ -613,8 +614,8 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
     },
   })).current;
 
-  const featW = width * 0.88;
-  const featH = featW * 0.60;
+  const featW = width * 0.82;
+  const featH = featW; // images are square
 
   return (
     <View style={{ flex: 1, paddingTop: 70 }}>
