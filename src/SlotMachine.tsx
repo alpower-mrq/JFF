@@ -19,6 +19,8 @@ import SlotShell from '../assets/slot_shell.svg';
 import CloudBg from '../assets/cloud_bg.svg';
 import SpinButtonBase from '../assets/spin_button_base.svg';
 import SpinButtonKey from '../assets/spin_button_key.svg';
+import Sunburst from '../assets/sunburst.svg';
+import CloseIcon from '../assets/close.svg';
 import { useAudioPlayer } from 'expo-audio';
 import Reel, { ReelHandle, Triple } from './Reel';
 import CoinCelebration from './CoinCelebration';
@@ -228,15 +230,13 @@ function TopBar({ total }: { total: number }) {
         </View>
         <Image source={SYMBOLS.coin} style={{ position: 'absolute', left: 0, top: 0, width: coin, height: coin, zIndex: 2 }} resizeMode="contain" />
       </View>
-      <View style={{ width: 52, height: 52, borderRadius: 16, borderWidth: 3, borderColor: '#fff', overflow: 'hidden' }}>
-        <Image source={require('../assets/avatar.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-      </View>
+      <CloseIcon width={22} height={22} />
     </View>
   );
 }
 
 export default function SlotMachine() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   const shellW = Math.min(width * SHELL_WIDTH_FRACTION, SHELL_MAX_WIDTH);
   const shellH = shellW / SHELL_ASPECT;
@@ -293,6 +293,21 @@ export default function SlotMachine() {
       useNativeDriver: USE_NATIVE,
     }).start();
   }, [reveal]);
+
+  // Sunburst background — slow continuous rotation.
+  const sunRotate = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(sunRotate, {
+        toValue: 1,
+        duration: 24000, // one full revolution every 24 seconds
+        easing: Easing.linear,
+        useNativeDriver: USE_NATIVE,
+      })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [sunRotate]);
 
   // Play the MrQ intro on load, then loop the background music quietly under it.
   // Web blocks audio until a user gesture, so there we kick it off on first tap.
@@ -379,9 +394,15 @@ export default function SlotMachine() {
     <View style={[styles.root, { backgroundColor: SKY }]}>
       {/* The whole scene fades in as the intro coin-shower clears. */}
       <Animated.View style={{ flex: 1, opacity: reveal }}>
-      {/* starburst rays on the blue — behind the clouds + machine */}
-      <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
-        <Image source={require('../assets/starburst_bg.png')} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      {/* sunburst rays — slowly rotating, behind clouds + machine */}
+      <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center' }]}>
+        <Animated.View style={{
+          width: Math.sqrt(width * width + height * height) * 1.1,
+          height: Math.sqrt(width * width + height * height) * 1.1,
+          transform: [{ rotate: sunRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }],
+        }}>
+          <Sunburst width="100%" height="100%" />
+        </Animated.View>
       </View>
 
       {/* cloud-bank "ground" (the pale bg) */}
