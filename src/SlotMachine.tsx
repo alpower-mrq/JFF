@@ -372,14 +372,14 @@ export default function SlotMachine() {
     });
   };
 
-  // Swipe down on games → back to slots; swipe up on slots (0 spins) → games.
+  // Swipe down on games → back to slots; swipe up on slots → games (any time).
   const panResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) =>
       Math.abs(gs.dy) > 14 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5,
     onPanResponderRelease: (_, gs) => {
       if (currentPageRef.current === 1 && gs.dy > 60) {
         navigateToSlots();
-      } else if (currentPageRef.current === 0 && spinsLeftRef.current === 0 && gs.dy < -60) {
+      } else if (currentPageRef.current === 0 && gs.dy < -60) {
         navigateToGames();
       }
     },
@@ -508,11 +508,9 @@ export default function SlotMachine() {
           )}
         </View>
 
-        {/* ── Page 1: Games ── */}
-        <View style={{ height, backgroundColor: SKY, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.26, letterSpacing: 4 }}>
-            GAMES
-          </Text>
+        {/* ── Page 1: Q Arcade ── */}
+        <View style={{ height, backgroundColor: SKY }}>
+          <GamesPage shellW={shellW} />
         </View>
 
       </Animated.View>
@@ -522,6 +520,52 @@ export default function SlotMachine() {
 
       {/* Intro coin shower */}
       <IntroCoinShower />
+    </View>
+  );
+}
+
+function GamesPage({ shellW }: { shellW: number }) {
+  const tileRadius = 14;
+  const borderStyle = { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.30)', borderRadius: tileRadius };
+  const featuredW = shellW * 0.88;
+  const featuredH = featuredW * 0.56;
+  const smallW = shellW * 0.215;
+  const smallH = smallW * 1.25;
+  const claimW = shellW * 0.215;
+  const claimH = shellW * 0.28;
+
+  const pad = shellW * 0.06;
+
+  return (
+    <View style={{ flex: 1, paddingHorizontal: pad, paddingTop: 72, paddingBottom: 32 }}>
+      <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175, letterSpacing: 4, textAlign: 'center', marginBottom: 22 }}>
+        Q ARCADE
+      </Text>
+
+      {/* Featured game tile */}
+      <View style={[{ width: featuredW, height: featuredH, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }, borderStyle]}>
+        <Text style={{ color: 'rgba(255,255,255,0.25)', fontFamily: FONT, fontSize: shellW * 0.06, letterSpacing: 2 }}>FEATURED</Text>
+      </View>
+
+      {/* Row of smaller game tiles */}
+      <View style={{ flexDirection: 'row', marginBottom: 28 }}>
+        {[0, 1, 2, 3].map(i => (
+          <View key={i} style={[{ width: smallW, height: smallH, marginRight: 10 }, borderStyle]} />
+        ))}
+      </View>
+
+      {/* More ways to claim */}
+      <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: FONT, fontSize: shellW * 0.062, letterSpacing: 2.5, marginBottom: 14 }}>
+        MORE WAYS TO CLAIM
+      </Text>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        {(['PIN', 'SCRATCH', 'REFER', 'CHEST'] as const).map(label => (
+          <View key={label} style={[{ width: claimW, height: claimH, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 12 }, borderStyle]}>
+            <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.064, letterSpacing: 1.5 }}>{label}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
