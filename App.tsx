@@ -1,7 +1,9 @@
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import SlotMachine from './src/SlotMachine';
+
+const isWeb = Platform.OS === 'web';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -10,17 +12,30 @@ export default function App() {
     'FormulaCondensed-Light': require('./fonts/FormulaCondensed-Light.otf'),
   });
 
-  // Hold on the sky colour until the fonts are ready (avoids a fallback-font flash).
-  if (!fontsLoaded) return <View style={[styles.container, { backgroundColor: '#022ab4' }]} />;
+  if (!fontsLoaded) return <View style={[styles.backdrop, { backgroundColor: '#022ab4' }]} />;
 
   return (
-    <View style={styles.container}>
-      <SlotMachine />
-      <StatusBar style="light" />
+    <View style={styles.backdrop}>
+      <View style={styles.phone}>
+        <SlotMachine />
+        <StatusBar style="light" />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  // Full viewport — dark surround on desktop so the phone column stands out.
+  backdrop: {
+    flex: 1,
+    backgroundColor: isWeb ? '#000' : undefined,
+    alignItems: isWeb ? 'center' : undefined,
+  },
+  // Mobile-width column: 430px max on web, full screen on native.
+  phone: {
+    flex: 1,
+    width: isWeb ? '100%' : undefined,
+    maxWidth: isWeb ? 430 : undefined,
+    overflow: isWeb ? 'hidden' : undefined,
+  },
 });
