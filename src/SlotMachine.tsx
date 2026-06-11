@@ -536,7 +536,7 @@ export default function SlotMachine() {
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
-          <GamesPage shellW={shellW} />
+          <GamesPage shellW={shellW} width={width} />
           <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
             <BottomClouds width={width} height={width / (375 / 183)} />
           </View>
@@ -553,46 +553,105 @@ export default function SlotMachine() {
   );
 }
 
-function GamesPage({ shellW }: { shellW: number }) {
-  const tileRadius = 14;
-  const borderStyle = { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.30)', borderRadius: tileRadius };
-  const featuredW = shellW * 0.88;
-  const featuredH = featuredW * 0.56;
-  const smallW = shellW * 0.215;
-  const smallH = smallW * 1.25;
-  const claimW = shellW * 0.215;
-  const claimH = shellW * 0.28;
+// Game assets — defined at module level so Metro resolves them at bundle time.
+const GAMES = [
+  require('../assets/image 37.png'),
+  require('../assets/image 38.png'),
+  require('../assets/image 39.png'),
+  require('../assets/image 40.png'),
+  require('../assets/image 41.png'),
+];
 
-  const pad = shellW * 0.06;
+function GamesPage({ shellW, width }: { shellW: number; width: number }) {
+  const N = GAMES.length;
+  // Triple the array so we can loop infinitely in both directions.
+  const TRIPLE = [...GAMES, ...GAMES, ...GAMES];
+
+  const CARD_W = width * 0.80;
+  const CARD_H = CARD_W;         // square cards
+  const GAP    = 14;
+  const STEP   = CARD_W + GAP;
+  // Pad on each side so the active card is centred with neighbours peeking.
+  const CENTER = (width - CARD_W) / 2;
+  const START  = N;              // begin at index N = first item of middle copy
+
+  const tx  = useRef(new Animated.Value(CENTER - START * STEP)).current;
+  const cur = useRef(START);
+
+  // Refs so PanResponder callbacks always read current layout values.
+  const stepR = useRef(STEP);
+  const centR = useRef(CENTER);
+  const lenR  = useRef(TRIPLE.length);
+  stepR.current = STEP;
+  centR.current = CENTER;
+
+  const xAt = (i: number) => centR.current - i * stepR.current;
+
+  const pan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dx) > 6 && Math.abs(gs.dx) > Math.abs(gs.dy),
+    onPanResponderGrant: () => tx.stopAnimation(),
+    onPanResponderMove: (_, gs) =>
+      tx.setValue(xAt(cur.current) + gs.dx),
+    onPanResponderRelease: (_, gs) => {
+      const step = stepR.current;
+      const swipe =
+        gs.dx < -step * 0.2 || gs.vx < -0.4 ?  1 :
+        gs.dx >  step * 0.2 || gs.vx >  0.4 ? -1 : 0;
+      const next = Math.max(1, Math.min(lenR.current - 2, cur.current + swipe));
+      cur.current = next;
+      Animated.spring(tx, {
+        toValue: xAt(next),
+        tension: 180,
+        friction: 26,
+        useNativeDriver: USE_NATIVE,
+      }).start(() => {
+        // Silently jump back to the equivalent position in the middle copy.
+        if (next < 2 || next > lenR.current - 3) {
+          const mid = ((next % N) + N) % N + N;
+          cur.current = mid;
+          tx.setValue(xAt(mid));
+        }
+      });
+    },
+  })).current;
+
+  // Small thumbnail strip — fixed row of all 5 games.
+  const thumbW = (width - 5 * 8) / 4.4;  // ~4 visible + hint of 5th
+  const thumbH = thumbW;
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: pad, paddingTop: 72, paddingBottom: 32 }}>
-      <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175, letterSpacing: 4, textAlign: 'center', marginBottom: 22 }}>
+    <View style={{ flex: 1, paddingTop: 70 }}>
+      <Text style={{
+        color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175,
+        letterSpacing: 4, textAlign: 'center', marginBottom: 20,
+      }}>
         Q ARCADE
       </Text>
 
-      {/* Featured game tile */}
-      <View style={[{ width: featuredW, height: featuredH, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }, borderStyle]}>
-        <Text style={{ color: 'rgba(255,255,255,0.25)', fontFamily: FONT, fontSize: shellW * 0.06, letterSpacing: 2 }}>FEATURED</Text>
+      {/* ── Infinite carousel ── */}
+      <View style={{ overflow: 'hidden', height: CARD_H }} {...pan.panHandlers}>
+        <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: tx }] }}>
+          {TRIPLE.map((src, i) => (
+            <Image
+              key={i}
+              source={src}
+              style={{ width: CARD_W, height: CARD_H, marginRight: GAP, borderRadius: 22 }}
+              resizeMode="cover"
+            />
+          ))}
+        </Animated.View>
       </View>
 
-      {/* Row of smaller game tiles */}
-      <View style={{ flexDirection: 'row', marginBottom: 28 }}>
-        {[0, 1, 2, 3].map(i => (
-          <View key={i} style={[{ width: smallW, height: smallH, marginRight: 10 }, borderStyle]} />
-        ))}
-      </View>
-
-      {/* More ways to claim */}
-      <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: FONT, fontSize: shellW * 0.062, letterSpacing: 2.5, marginBottom: 14 }}>
-        MORE WAYS TO CLAIM
-      </Text>
-
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        {(['PIN', 'SCRATCH', 'REFER', 'CHEST'] as const).map(label => (
-          <View key={label} style={[{ width: claimW, height: claimH, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 12 }, borderStyle]}>
-            <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.064, letterSpacing: 1.5 }}>{label}</Text>
-          </View>
+      {/* ── Thumbnail strip ── */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginTop: 18, overflow: 'hidden' }}>
+        {GAMES.map((src, i) => (
+          <Image
+            key={i}
+            source={src}
+            style={{ width: thumbW, height: thumbH, marginRight: 8, borderRadius: 12 }}
+            resizeMode="cover"
+          />
         ))}
       </View>
     </View>
