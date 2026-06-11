@@ -400,11 +400,26 @@ export default function SlotMachine() {
   const panResponder = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) =>
       Math.abs(gs.dy) > 14 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5,
+    onPanResponderGrant: () => pageTranslate.stopAnimation(),
+    onPanResponderMove: (_, gs) => {
+      const base = currentPageRef.current === 0 ? 0 : -(height * 3);
+      // Damped pull — quarter resistance so it follows the finger but resists.
+      pageTranslate.setValue(base + gs.dy * 0.25);
+    },
     onPanResponderRelease: (_, gs) => {
       if (currentPageRef.current === 1 && gs.dy > 60) {
         navigateToSlots();
       } else if (currentPageRef.current === 0 && gs.dy < -60) {
         navigateToGames();
+      } else {
+        // Didn't cross threshold — spring back to the current page.
+        const base = currentPageRef.current === 0 ? 0 : -(height * 3);
+        Animated.spring(pageTranslate, {
+          toValue: base,
+          tension: 200,
+          friction: 22,
+          useNativeDriver: USE_NATIVE,
+        }).start();
       }
     },
   })).current;
