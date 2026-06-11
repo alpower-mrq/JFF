@@ -180,7 +180,7 @@ function BalanceCounter({ value, fontSize }: { value: number; fontSize: number }
   );
 }
 
-function TopBar({ total }: { total: number }) {
+function TopBar({ total, onClose }: { total: number; onClose: () => void }) {
   const coin = 58;
   const pillH = 44;
   return (
@@ -200,7 +200,9 @@ function TopBar({ total }: { total: number }) {
         </View>
         <Image source={SYMBOLS.coin} style={{ position: 'absolute', left: 0, top: 0, width: coin, height: coin, zIndex: 2 }} resizeMode="contain" />
       </View>
-      <CloseIcon width={22} height={22} />
+      <Pressable onPress={onClose} hitSlop={12}>
+        <CloseIcon width={22} height={22} />
+      </Pressable>
     </View>
   );
 }
@@ -334,13 +336,34 @@ export default function SlotMachine() {
 
   const navigateToSlots = () => {
     currentPageRef.current = 0;
-    // Spring back up — bounces slightly as it lands on the slot machine.
-    Animated.spring(pageTranslate, {
+    Animated.timing(pageTranslate, {
       toValue: 0,
-      tension: 220,
-      friction: 26,
+      duration: 220,
+      easing: Easing.in(Easing.cubic),
       useNativeDriver: USE_NATIVE,
     }).start();
+  };
+
+  const handleClose = () => {
+    if (Platform.OS === 'web') {
+      // @ts-ignore
+      window.location.reload();
+    } else {
+      // Native: reset all game state
+      setSpinsLeft(SPINS_MAX);
+      spinsLeftRef.current = SPINS_MAX;
+      setTotal(12384);
+      setWin(null);
+      setSpinning(false);
+      setCoinTrigger(0);
+      setJackpotTrigger(0);
+      setJackpotSymbol(null);
+      setShowLetsgo(false);
+      spinsSinceTriple.current = 0;
+      busy.current = false;
+      currentPageRef.current = 0;
+      pageTranslate.setValue(0);
+    }
   };
 
   // Bounce in the LET'S GO graphic, then shoot down to the games world.
@@ -516,7 +539,7 @@ export default function SlotMachine() {
       </Animated.View>
 
       {/* TopBar floats above both pages */}
-      <TopBar total={total} />
+      <TopBar total={total} onClose={handleClose} />
 
       {/* Intro coin shower */}
       <IntroCoinShower />
