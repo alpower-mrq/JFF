@@ -696,7 +696,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
           <Image source={LOWER_BG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="stretch" />
 
           {/* MrQ logo */}
-          <View style={{ position: 'absolute', top: 156 * scale, left: 0, right: 0, alignItems: 'center' }}>
+          <View style={{ position: 'absolute', top: 191 * scale, left: 0, right: 0, alignItems: 'center' }}>
             <SvgXml xml={MRQ_LOGO_SVG} width={logoW} height={logoH} />
           </View>
 
