@@ -572,7 +572,7 @@ export default function SlotMachine() {
           <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
             <BottomClouds width={width} height={width / (375 / 183)} />
           </View>
-          <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} />
+          <GamesPage shellW={shellW} width={width} innerScrollRef={innerScrollRef} />
         </View>
 
       </Animated.View>
@@ -589,21 +589,19 @@ export default function SlotMachine() {
 const FEATURED_GAME = require('../assets/game37.png');
 const WORLD_IMG = require('../assets/world_img.png');
 
-function GamesPage({ shellW, width, height, innerScrollRef }: {
-  shellW: number; width: number; height: number;
+function GamesPage({ shellW, width, innerScrollRef }: {
+  shellW: number; width: number;
   innerScrollRef: React.MutableRefObject<number>;
 }) {
   const WORLD_NATIVE_H = width * (879 / 375);
-  // How far we can scroll before the bottom of the image hits the bottom of the page.
-  const maxScroll = Math.max(0, WORLD_NATIVE_H - height);
+  const maxScrollRef = useRef(0);
 
-  // translateY: 0 = world image at top of page, -maxScroll = bottom of image visible.
   const translateY = useRef(new Animated.Value(0)).current;
-  const baseY = useRef(0); // value of translateY at the start of each gesture
+  const baseY = useRef(0);
 
   useEffect(() => {
     const id = translateY.addListener(({ value }) => {
-      innerScrollRef.current = -value; // positive = scrolled down
+      innerScrollRef.current = -value;
     });
     return () => translateY.removeListener(id);
   }, [translateY, innerScrollRef]);
@@ -616,12 +614,11 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
       baseY.current = (translateY as any)._value ?? 0;
     },
     onPanResponderMove: (_, gs) => {
-      const next = Math.min(0, Math.max(-maxScroll, baseY.current + gs.dy));
+      const next = Math.min(0, Math.max(-maxScrollRef.current, baseY.current + gs.dy));
       translateY.setValue(next);
     },
     onPanResponderRelease: (_, gs) => {
-      // Momentum: flick continues a little past release.
-      const next = Math.min(0, Math.max(-maxScroll, baseY.current + gs.dy + gs.vy * 80));
+      const next = Math.min(0, Math.max(-maxScrollRef.current, baseY.current + gs.dy + gs.vy * 80));
       Animated.spring(translateY, {
         toValue: next,
         tension: 180,
@@ -635,17 +632,12 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
   const featH = featW;
 
   return (
-    <View style={{ width, height, overflow: 'hidden' }} {...scrollPan.panHandlers}>
-      {/* Scrollable world image — starts at top, user pulls down to reveal more */}
-      <Animated.View style={{ transform: [{ translateY }] }}>
-        <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
-      </Animated.View>
-
-      {/* Title + featured tile overlaid at the top */}
-      <View style={{ position: 'absolute', top: 70, left: 0, right: 0, alignItems: 'center' }}>
+    <View style={{ flex: 1 }}>
+      {/* Fixed header: title + featured tile */}
+      <View style={{ paddingTop: 70, alignItems: 'center', marginBottom: 16 }}>
         <Text style={{
           color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175,
-          letterSpacing: 4, textAlign: 'center', marginBottom: 20,
+          letterSpacing: 4, marginBottom: 20,
         }}>
           Q ARCADE
         </Text>
@@ -654,6 +646,19 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
           style={{ width: featW, height: featH, borderRadius: 22 }}
           resizeMode="cover"
         />
+      </View>
+
+      {/* World image — scrollable viewport fills remaining space */}
+      <View
+        style={{ flex: 1, overflow: 'hidden' }}
+        onLayout={(e) => {
+          maxScrollRef.current = Math.max(0, WORLD_NATIVE_H - e.nativeEvent.layout.height);
+        }}
+        {...scrollPan.panHandlers}
+      >
+        <Animated.View style={{ transform: [{ translateY }] }}>
+          <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
+        </Animated.View>
       </View>
     </View>
   );
