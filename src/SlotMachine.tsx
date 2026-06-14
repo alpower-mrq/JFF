@@ -632,34 +632,16 @@ function GamesPage({ shellW, width, innerScrollRef }: {
   const featH = featW;
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Fixed header: title + featured tile */}
-      <View style={{ paddingTop: 70, alignItems: 'center', marginBottom: 16 }}>
-        <Text style={{
-          color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175,
-          letterSpacing: 4, marginBottom: 20,
-        }}>
-          Q ARCADE
-        </Text>
-        <Image
-          source={FEATURED_GAME}
-          style={{ width: featW, height: featH, borderRadius: 22 }}
-          resizeMode="cover"
-        />
-      </View>
-
-      {/* World image — scrollable viewport fills remaining space */}
-      <View
-        style={{ flex: 1, overflow: 'hidden' }}
-        onLayout={(e) => {
-          maxScrollRef.current = Math.max(0, WORLD_NATIVE_H - e.nativeEvent.layout.height);
-        }}
-        {...scrollPan.panHandlers}
-      >
-        <Animated.View style={{ transform: [{ translateY }] }}>
-          <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
-        </Animated.View>
-      </View>
+    <View
+      style={{ flex: 1, overflow: 'hidden' }}
+      onLayout={(e) => {
+        maxScrollRef.current = Math.max(0, WORLD_NATIVE_H - e.nativeEvent.layout.height);
+      }}
+      {...scrollPan.panHandlers}
+    >
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
+      </Animated.View>
     </View>
   );
 }
