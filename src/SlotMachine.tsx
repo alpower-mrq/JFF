@@ -656,6 +656,8 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     });
   };
 
+  const logoScale = useRef(new Animated.Value(0)).current;
+
   // One scale Animated.Value per tile — all start hidden (0).
   const tileScales = useRef(
     Array.from({ length: GAME_TILES.length }, () => new Animated.Value(0))
@@ -671,21 +673,28 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   const handlePressOut = (i: number) =>
     Animated.spring(pressScales[i], { toValue: 1, tension: 220, friction: 12, useNativeDriver: USE_NATIVE }).start();
 
-  // Staggered pop-in whenever the games page becomes active.
+  // Logo bounce then staggered tile pop-in whenever the games page becomes active.
   useEffect(() => {
     if (trigger === 0) return;
+    logoScale.setValue(0);
     tileScales.forEach(a => a.setValue(0));
-    Animated.stagger(
-      120,
-      tileScales.map(anim =>
-        Animated.sequence([
-          // Overshoot up
-          Animated.timing(anim, { toValue: 1.3, duration: 160, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
-          // Settle back
-          Animated.spring(anim, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
-        ])
-      )
-    ).start();
+    Animated.sequence([
+      // Logo bounces in first
+      Animated.sequence([
+        Animated.timing(logoScale, { toValue: 1.25, duration: 200, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
+        Animated.spring(logoScale, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+      ]),
+      // Then tiles stagger in
+      Animated.stagger(
+        120,
+        tileScales.map(anim =>
+          Animated.sequence([
+            Animated.timing(anim, { toValue: 1.3, duration: 160, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
+            Animated.spring(anim, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+          ])
+        )
+      ),
+    ]).start();
   }, [trigger]);
 
   useEffect(() => {
@@ -725,10 +734,10 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
           {/* Background */}
           <Image source={LOWER_BG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="stretch" />
 
-          {/* MrQ logo */}
-          <View style={{ position: 'absolute', top: 191 * scale, left: 0, right: 0, alignItems: 'center' }}>
+          {/* MrQ logo — bounces in before tiles */}
+          <Animated.View style={{ position: 'absolute', top: 191 * scale, left: 0, right: 0, alignItems: 'center', transform: [{ scale: logoScale }] }}>
             <SvgXml xml={MRQ_LOGO_SVG} width={logoW} height={logoH} />
-          </View>
+          </Animated.View>
 
           {/* Game tiles — pop in sequentially on arrival */}
           {GAME_TILES.map(({ src, x, y, w, h }, i) => (
