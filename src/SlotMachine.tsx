@@ -622,7 +622,8 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   trigger: number;
 }) {
   const INITIAL_SCROLL = 70;
-  const WORLD_NATIVE_H = Math.max(height + INITIAL_SCROLL, width * (1590 / 752));
+  const BG_NATIVE_H = width * (1590 / 752);           // background at natural aspect ratio
+  const WORLD_NATIVE_H = Math.max(height + INITIAL_SCROLL, BG_NATIVE_H); // container tall enough to fill screen
   const maxScroll = WORLD_NATIVE_H - height;
   const maxScrollRef = useRef(maxScroll);
   maxScrollRef.current = maxScroll;
@@ -746,7 +747,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
       <Animated.View style={{ transform: [{ translateY }] }}>
         <View style={{ width, height: WORLD_NATIVE_H }}>
           {/* Background */}
-          <Image source={LOWER_BG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="stretch" />
+          <Image source={LOWER_BG} style={{ width, height: BG_NATIVE_H }} resizeMode="stretch" />
 
           {/* MrQ logo — bounces in before tiles */}
           <Animated.View style={{ position: 'absolute', top: 191 * scale, left: 0, right: 0, alignItems: 'center', transform: [{ scale: logoScale }] }}>
