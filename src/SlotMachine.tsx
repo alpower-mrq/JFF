@@ -6,6 +6,7 @@ import {
   Easing,
   Image,
   LayoutChangeEvent,
+  Modal,
   PanResponder,
   Platform,
   Pressable,
@@ -601,12 +602,12 @@ const MRQ_LOGO_SVG = `<svg width="220" height="86" viewBox="0 0 220 86" fill="no
 // Exact positions from Figma (node 66:1864). Reference bg = 376×795 pt.
 // x/y = top-left of tile relative to bg top-left. Scale = display_width / 376.
 const GAME_TILES = [
-  { src: GAME_WHEEL,   x: 135, y: 279, w: 107, h: 137 },
-  { src: GAME_ARCADE,  x:  10, y: 388, w: 108, h: 120 },
-  { src: GAME_VAULT,   x: 256, y: 394, w: 105, h: 110 },
-  { src: GAME_FLIP,    x: 125, y: 482, w: 121, h: 114 },
-  { src: GAME_SCRATCH, x:  -5, y: 575, w: 127, h: 131 },
-  { src: GAME_MERCH,   x: 238, y: 576, w: 149, h: 141 },
+  { src: GAME_WHEEL,   x: 135, y: 279, w: 107, h: 137, label: 'Q Wheel',    subtitle: 'Spin & Win' },
+  { src: GAME_ARCADE,  x:  10, y: 388, w: 108, h: 120, label: 'Arcade',     subtitle: 'Play & Win' },
+  { src: GAME_VAULT,   x: 256, y: 394, w: 105, h: 110, label: 'Q Vault',    subtitle: 'Unlock Rewards' },
+  { src: GAME_FLIP,    x: 125, y: 482, w: 121, h: 114, label: 'Flir Coin',  subtitle: 'Win Coins' },
+  { src: GAME_SCRATCH, x:  -5, y: 575, w: 127, h: 131, label: 'Scratch',    subtitle: 'Match & Win' },
+  { src: GAME_MERCH,   x: 238, y: 576, w: 149, h: 141, label: 'Merch Shop', subtitle: 'Prizes & Goodies' },
 ] as const;
 
 function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
@@ -623,10 +624,22 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   const translateY = useRef(new Animated.Value(-INITIAL_SCROLL)).current;
   const baseY = useRef(0);
 
+  const [openModal, setOpenModal] = useState<number | null>(null);
+
   // One scale Animated.Value per tile — all start hidden (0).
   const tileScales = useRef(
     Array.from({ length: GAME_TILES.length }, () => new Animated.Value(0))
   ).current;
+
+  // Press-in affordance scale per tile — all start at 1.
+  const pressScales = useRef(
+    Array.from({ length: GAME_TILES.length }, () => new Animated.Value(1))
+  ).current;
+
+  const handlePressIn = (i: number) =>
+    Animated.timing(pressScales[i], { toValue: 0.88, duration: 80, easing: Easing.out(Easing.quad), useNativeDriver: USE_NATIVE }).start();
+  const handlePressOut = (i: number) =>
+    Animated.spring(pressScales[i], { toValue: 1, tension: 220, friction: 12, useNativeDriver: USE_NATIVE }).start();
 
   // Staggered pop-in whenever the games page becomes active.
   useEffect(() => {
@@ -689,9 +702,8 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
 
           {/* Game tiles — pop in sequentially on arrival */}
           {GAME_TILES.map(({ src, x, y, w, h }, i) => (
-            <Animated.Image
+            <Animated.View
               key={i}
-              source={src}
               style={{
                 position: 'absolute',
                 width: w * scale,
@@ -700,11 +712,53 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                 top: y * scale,
                 transform: [{ scale: tileScales[i] }],
               }}
-              resizeMode="contain"
-            />
+            >
+              <Pressable
+                style={{ flex: 1 }}
+                onPressIn={() => handlePressIn(i)}
+                onPressOut={() => handlePressOut(i)}
+                onPress={() => setOpenModal(i)}
+              >
+                <Animated.View style={{ flex: 1, transform: [{ scale: pressScales[i] }] }}>
+                  <Image source={src} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+                </Animated.View>
+              </Pressable>
+            </Animated.View>
           ))}
         </View>
       </Animated.View>
+
+      {/* Game modal */}
+      <Modal
+        visible={openModal !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpenModal(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '85%', backgroundColor: '#0d1b6e', borderRadius: 24, padding: 28, borderWidth: 1, borderColor: '#3d52cc' }}>
+            {openModal !== null && (
+              <>
+                <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
+                  {GAME_TILES[openModal].label}
+                </Text>
+                <Text style={{ color: '#c8affe', fontSize: 13, fontWeight: '600', letterSpacing: 1, marginBottom: 20, textTransform: 'uppercase' }}>
+                  {GAME_TILES[openModal].subtitle}
+                </Text>
+                <Text style={{ color: '#a0a8e8', fontSize: 15, lineHeight: 22, marginBottom: 28 }}>
+                  This is where the {GAME_TILES[openModal].label} experience will live.
+                </Text>
+              </>
+            )}
+            <Pressable
+              onPress={() => setOpenModal(null)}
+              style={{ alignSelf: 'center', backgroundColor: '#3d52cc', paddingHorizontal: 32, paddingVertical: 13, borderRadius: 30 }}
+            >
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
