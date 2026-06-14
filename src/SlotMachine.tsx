@@ -624,7 +624,31 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   const translateY = useRef(new Animated.Value(-INITIAL_SCROLL)).current;
   const baseY = useRef(0);
 
-  const [openModal, setOpenModal] = useState<number | null>(null);
+  const [modalIndex, setModalIndex] = useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const sheetY = useRef(new Animated.Value(400)).current;
+
+  const openModal = (i: number) => {
+    setModalIndex(i);
+    setModalVisible(true);
+    backdropOpacity.setValue(0);
+    sheetY.setValue(400);
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: USE_NATIVE }),
+      Animated.spring(sheetY, { toValue: 0, tension: 180, friction: 22, useNativeDriver: USE_NATIVE }),
+    ]).start();
+  };
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: USE_NATIVE }),
+      Animated.timing(sheetY, { toValue: 400, duration: 220, easing: Easing.in(Easing.quad), useNativeDriver: USE_NATIVE }),
+    ]).start(() => {
+      setModalVisible(false);
+      setModalIndex(null);
+    });
+  };
 
   // One scale Animated.Value per tile — all start hidden (0).
   const tileScales = useRef(
@@ -717,7 +741,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                 style={{ flex: 1 }}
                 onPressIn={() => handlePressIn(i)}
                 onPressOut={() => handlePressOut(i)}
-                onPress={() => setOpenModal(i)}
+                onPress={() => openModal(i)}
               >
                 <Animated.View style={{ flex: 1, transform: [{ scale: pressScales[i] }] }}>
                   <Image source={src} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
@@ -728,17 +752,23 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
         </View>
       </Animated.View>
 
-      {/* Game modal — bottom sheet */}
+      {/* Game modal — backdrop fades, sheet slides up independently */}
       <Modal
-        visible={openModal !== null}
+        visible={modalVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setOpenModal(null)}
+        animationType="none"
+        onRequestClose={closeModal}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,20,0.82)', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+          {/* Fading backdrop */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,20,0.82)', opacity: backdropOpacity }]}
+          />
           {/* Tap backdrop to close */}
-          <Pressable style={{ flex: 1, width: '100%' }} onPress={() => setOpenModal(null)} />
-          <View style={{
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
+
+          {/* Sheet slides up */}
+          <Animated.View style={{
             width,
             backgroundColor: '#070b3a',
             borderTopLeftRadius: 28,
@@ -747,6 +777,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
             borderBottomWidth: 0,
             borderColor: '#1e2d8a',
             paddingBottom: 44,
+            transform: [{ translateY: sheetY }],
           }}>
             {/* Drag handle */}
             <View style={{ alignItems: 'center', paddingTop: 12, marginBottom: 4 }}>
@@ -755,18 +786,18 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
 
             {/* Close X */}
             <Pressable
-              onPress={() => setOpenModal(null)}
+              onPress={closeModal}
               style={{ position: 'absolute', top: 16, right: 20, padding: 8 }}
             >
               <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 20, lineHeight: 20 }}>✕</Text>
             </Pressable>
 
-            {openModal !== null && (
+            {modalIndex !== null && (
               <>
                 {/* Tile image */}
                 <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 12 }}>
                   <Image
-                    source={GAME_TILES[openModal].src}
+                    source={GAME_TILES[modalIndex].src}
                     style={{ width: 140, height: 140 }}
                     resizeMode="contain"
                   />
@@ -777,27 +808,27 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
 
                 {/* Title + subtitle */}
                 <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, marginBottom: 4, paddingHorizontal: 24 }}>
-                  {GAME_TILES[openModal].label}
+                  {GAME_TILES[modalIndex].label}
                 </Text>
                 <Text style={{ color: '#e8a020', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginBottom: 18 }}>
-                  {GAME_TILES[openModal].subtitle}
+                  {GAME_TILES[modalIndex].subtitle}
                 </Text>
 
                 {/* Body */}
                 <Text style={{ color: '#7880b8', fontSize: 14, lineHeight: 21, textAlign: 'center', paddingHorizontal: 36, marginBottom: 32 }}>
-                  This is where the {GAME_TILES[openModal].label} experience will live.
+                  This is where the {GAME_TILES[modalIndex].label} experience will live.
                 </Text>
 
                 {/* CTA */}
                 <Pressable
-                  onPress={() => setOpenModal(null)}
+                  onPress={closeModal}
                   style={{ marginHorizontal: 36, backgroundColor: '#e8a020', paddingVertical: 15, borderRadius: 30, alignItems: 'center' }}
                 >
                   <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
                 </Pressable>
               </>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
