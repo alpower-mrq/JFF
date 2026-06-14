@@ -735,10 +735,11 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
         animationType="slide"
         onRequestClose={() => setOpenModal(null)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,20,0.82)', justifyContent: 'flex-end' }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,20,0.82)', justifyContent: 'flex-end', alignItems: 'center' }}>
           {/* Tap backdrop to close */}
-          <Pressable style={{ flex: 1 }} onPress={() => setOpenModal(null)} />
+          <Pressable style={{ flex: 1, width: '100%' }} onPress={() => setOpenModal(null)} />
           <View style={{
+            width,
             backgroundColor: '#070b3a',
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
@@ -772,13 +773,13 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                 </View>
 
                 {/* Gold accent line */}
-                <View style={{ height: 1, backgroundColor: '#c9a227', marginHorizontal: 60, borderRadius: 1, opacity: 0.5, marginBottom: 20 }} />
+                <View style={{ height: 1, backgroundColor: '#e8a020', marginHorizontal: 60, borderRadius: 1, opacity: 0.5, marginBottom: 20 }} />
 
                 {/* Title + subtitle */}
                 <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, marginBottom: 4, paddingHorizontal: 24 }}>
                   {GAME_TILES[openModal].label}
                 </Text>
-                <Text style={{ color: '#c9a227', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginBottom: 18 }}>
+                <Text style={{ color: '#e8a020', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginBottom: 18 }}>
                   {GAME_TILES[openModal].subtitle}
                 </Text>
 
@@ -790,7 +791,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                 {/* CTA */}
                 <Pressable
                   onPress={() => setOpenModal(null)}
-                  style={{ marginHorizontal: 36, backgroundColor: '#c9a227', paddingVertical: 15, borderRadius: 30, alignItems: 'center' }}
+                  style={{ marginHorizontal: 36, backgroundColor: '#e8a020', paddingVertical: 15, borderRadius: 30, alignItems: 'center' }}
                 >
                   <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
                 </Pressable>
