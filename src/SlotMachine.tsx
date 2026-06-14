@@ -588,6 +588,12 @@ export default function SlotMachine() {
 }
 
 const FEATURED_GAME = require('../assets/game37.png');
+const ARCADE_GAMES = [
+  require('../assets/game38.png'),
+  require('../assets/game39.png'),
+  require('../assets/game40.png'),
+  require('../assets/game41.png'),
+];
 const LOWER_BG   = require('../assets/lower/lower_bg.png');
 const GAME_WHEEL  = require('../assets/lower/wheel.png');
 const GAME_ARCADE = require('../assets/lower/arcade.png');
@@ -794,38 +800,51 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
 
             {modalIndex !== null && (
               <>
-                {/* Tile image */}
-                <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 12 }}>
-                  <Image
-                    source={GAME_TILES[modalIndex].src}
-                    style={{ width: 140, height: 140 }}
-                    resizeMode="contain"
-                  />
+                {/* Title + subtitle — always shown */}
+                <View style={{ alignItems: 'center', paddingTop: 28, marginBottom: 4 }}>
+                  <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, paddingHorizontal: 24 }}>
+                    {GAME_TILES[modalIndex].label}
+                  </Text>
+                  <Text style={{ color: '#e8a020', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginTop: 4 }}>
+                    {GAME_TILES[modalIndex].subtitle}
+                  </Text>
                 </View>
 
                 {/* Gold accent line */}
-                <View style={{ height: 1, backgroundColor: '#e8a020', marginHorizontal: 60, borderRadius: 1, opacity: 0.5, marginBottom: 20 }} />
+                <View style={{ height: 1, backgroundColor: '#e8a020', marginHorizontal: 60, borderRadius: 1, opacity: 0.4, marginTop: 16, marginBottom: 20 }} />
 
-                {/* Title + subtitle */}
-                <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, marginBottom: 4, paddingHorizontal: 24 }}>
-                  {GAME_TILES[modalIndex].label}
-                </Text>
-                <Text style={{ color: '#e8a020', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginBottom: 18 }}>
-                  {GAME_TILES[modalIndex].subtitle}
-                </Text>
-
-                {/* Body */}
-                <Text style={{ color: '#7880b8', fontSize: 14, lineHeight: 21, textAlign: 'center', paddingHorizontal: 36, marginBottom: 32 }}>
-                  This is where the {GAME_TILES[modalIndex].label} experience will live.
-                </Text>
-
-                {/* CTA */}
-                <Pressable
-                  onPress={closeModal}
-                  style={{ marginHorizontal: 36, backgroundColor: '#e8a020', paddingVertical: 15, borderRadius: 30, alignItems: 'center' }}
-                >
-                  <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
-                </Pressable>
+                {modalIndex === 1 ? (
+                  /* Arcade: 2×2 game picker */
+                  <>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 28 }}>
+                      {ARCADE_GAMES.map((src, i) => (
+                        <Pressable
+                          key={i}
+                          style={{ width: '47%', aspectRatio: 1, backgroundColor: '#0d1550', borderRadius: 16, borderWidth: 1, borderColor: '#1e2d8a', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}
+                          onPress={closeModal}
+                        >
+                          <Image source={src} style={{ width: '85%', height: '85%' }} resizeMode="contain" />
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  /* Default: hero image + body + CTA */
+                  <>
+                    <View style={{ alignItems: 'center', paddingBottom: 12 }}>
+                      <Image source={GAME_TILES[modalIndex].src} style={{ width: 140, height: 140 }} resizeMode="contain" />
+                    </View>
+                    <Text style={{ color: '#7880b8', fontSize: 14, lineHeight: 21, textAlign: 'center', paddingHorizontal: 36, marginBottom: 32 }}>
+                      This is where the {GAME_TILES[modalIndex].label} experience will live.
+                    </Text>
+                    <Pressable
+                      onPress={closeModal}
+                      style={{ marginHorizontal: 36, backgroundColor: '#e8a020', paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginBottom: 0 }}
+                    >
+                      <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
+                    </Pressable>
+                  </>
+                )}
               </>
             )}
           </Animated.View>
