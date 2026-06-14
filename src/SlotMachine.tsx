@@ -572,7 +572,7 @@ export default function SlotMachine() {
         </View>
 
         {/* ── Page 1: Q Arcade ── */}
-        <View style={{ height, backgroundColor: SKY }}>
+        <View style={{ height, backgroundColor: SKY, overflow: 'hidden' }}>
           <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} trigger={gamesTrigger} />
         </View>
 
@@ -621,7 +621,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   innerScrollRef: React.MutableRefObject<number>;
   trigger: number;
 }) {
-  const WORLD_NATIVE_H = width * (1590 / 752);
+  const WORLD_NATIVE_H = Math.max(height, width * (1590 / 752));
   const INITIAL_SCROLL = 70;
   const maxScroll = Math.max(0, WORLD_NATIVE_H - height) + INITIAL_SCROLL;
   const maxScrollRef = useRef(maxScroll);
