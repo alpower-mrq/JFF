@@ -577,68 +577,13 @@ export default function SlotMachine() {
 }
 
 const FEATURED_GAME = require('../assets/game37.png');
-
-// Carousel games — excludes the featured tile.
-const GAMES = [
-  require('../assets/game38.png'),
-  require('../assets/game39.png'),
-  require('../assets/game40.png'),
-  require('../assets/game41.png'),
-];
+const WORLD_IMG = require('../assets/world_img.png');
 
 function GamesPage({ shellW, width }: { shellW: number; width: number }) {
-  const N = GAMES.length;
-  const TRIPLE = [...GAMES, ...GAMES, ...GAMES];
-
-  // Carousel tiles: smaller so neighbours peek clearly on both sides.
-  const CARD_W = width * 0.42;
-  const CARD_H = CARD_W;
-  const GAP    = 14;
-  const STEP   = CARD_W + GAP;
-  const CENTER = (width - CARD_W) / 2;
-  const START  = N;
-
-  const tx  = useRef(new Animated.Value(CENTER - START * STEP)).current;
-  const cur = useRef(START);
-
-  const stepR = useRef(STEP);
-  const centR = useRef(CENTER);
-  const lenR  = useRef(TRIPLE.length);
-  stepR.current = STEP;
-  centR.current = CENTER;
-
-  const xAt = (i: number) => centR.current - i * stepR.current;
-
-  const pan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gs) =>
-      Math.abs(gs.dx) > 6 && Math.abs(gs.dx) > Math.abs(gs.dy),
-    onPanResponderGrant: () => tx.stopAnimation(),
-    onPanResponderMove: (_, gs) =>
-      tx.setValue(xAt(cur.current) + gs.dx),
-    onPanResponderRelease: (_, gs) => {
-      const step = stepR.current;
-      const swipe =
-        gs.dx < -step * 0.2 || gs.vx < -0.4 ?  1 :
-        gs.dx >  step * 0.2 || gs.vx >  0.4 ? -1 : 0;
-      const next = Math.max(1, Math.min(lenR.current - 2, cur.current + swipe));
-      cur.current = next;
-      Animated.spring(tx, {
-        toValue: xAt(next),
-        tension: 180,
-        friction: 26,
-        useNativeDriver: USE_NATIVE,
-      }).start(() => {
-        if (next < 2 || next > lenR.current - 3) {
-          const mid = ((next % N) + N) % N + N;
-          cur.current = mid;
-          tx.setValue(xAt(mid));
-        }
-      });
-    },
-  })).current;
-
   const featW = width * 0.82;
-  const featH = featW; // images are square
+  const featH = featW;
+  // world_img is 375×879 — preserve aspect ratio at full width
+  const worldH = width * (879 / 375);
 
   return (
     <View style={{ flex: 1, paddingTop: 70 }}>
@@ -649,27 +594,20 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
         Q ARCADE
       </Text>
 
-      {/* ── Static featured image ── */}
+      {/* Featured tile */}
       <Image
         source={FEATURED_GAME}
         style={{ width: featW, height: featH, alignSelf: 'center', borderRadius: 22 }}
         resizeMode="cover"
       />
 
-      {/* ── Swipeable carousel — sits over the clouds ── */}
-      <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 40 }}>
-        <View style={{ overflow: 'hidden', height: CARD_H }} {...pan.panHandlers}>
-          <Animated.View style={{ flexDirection: 'row', transform: [{ translateX: tx }] }}>
-            {TRIPLE.map((src, i) => (
-              <Image
-                key={i}
-                source={src}
-                style={{ width: CARD_W, height: CARD_H, marginRight: GAP, borderRadius: 18 }}
-                resizeMode="cover"
-              />
-            ))}
-          </Animated.View>
-        </View>
+      {/* World image — sits over the bottom clouds */}
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <Image
+          source={WORLD_IMG}
+          style={{ width, height: worldH }}
+          resizeMode="cover"
+        />
       </View>
     </View>
   );
