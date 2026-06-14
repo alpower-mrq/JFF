@@ -12,6 +12,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "-s", "dist", "-l", "8083"],
       "port": 8083
+    },
+    {
+      "name": "web-old",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "-s", "dist_old", "-l", "8084"],
+      "port": 8084
     }
   ]
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   DimensionValue,
@@ -19,7 +19,7 @@ import SlotShell from '../assets/slot_shell.svg';
 import CloudBg from '../assets/cloud_bg.svg';
 import SpinButtonBase from '../assets/spin_button_base.svg';
 import SpinButtonKey from '../assets/spin_button_key.svg';
-import Sunburst from '../assets/sunburst.svg';
+const SUNBURST = require('../assets/sunburst.png');
 import CloseIcon from '../assets/close.svg';
 import LetsGoIcon from '../assets/letsgo.svg';
 import BottomClouds from '../assets/bottom-bg-clouds.svg';
@@ -36,8 +36,8 @@ const USE_NATIVE = Platform.OS !== 'web';
 const SCROLL_SOUND = require('../assets/scrolling.mp3');
 const SUCCESS_SOUND = require('../assets/success.mp3');
 const JACKPOT_SOUND = require('../assets/jackpot.mp3');
-const INTRO_SOUND = require('../assets/MrQ.wav');
-const BG_SOUND = require('../assets/bgGrils.mp3');
+const INTRO_SOUND = require('../assets/MrQ.m4a');
+const BG_SOUND = require('../assets/bgGrils.m4a');
 const SCROLL_START = 2.3;
 const BG_VOLUME = 0.15;
 
@@ -136,7 +136,7 @@ function Drift({ children, ampX = 0, ampY = 0, duration, delay = 0, flipX = fals
   return <Animated.View style={[{ pointerEvents: 'none' }, style, { transform }]}>{children}</Animated.View>;
 }
 
-function WinBadge({ win, size }: { win: number | null; size: number }) {
+const WinBadge = React.memo(function WinBadge({ win, size }: { win: number | null; size: number }) {
   const scale = useRef(new Animated.Value(0)).current;
   const [shown, setShown] = useState<number | null>(null);
   useEffect(() => {
@@ -156,9 +156,9 @@ function WinBadge({ win, size }: { win: number | null; size: number }) {
       </Text>
     </Animated.View>
   );
-}
+});
 
-function BalanceCounter({ value, fontSize }: { value: number; fontSize: number }) {
+const BalanceCounter = React.memo(function BalanceCounter({ value, fontSize }: { value: number; fontSize: number }) {
   const anim = useRef(new Animated.Value(value)).current;
   const pulse = useRef(new Animated.Value(1)).current;
   const [shown, setShown] = useState(value);
@@ -180,9 +180,9 @@ function BalanceCounter({ value, fontSize }: { value: number; fontSize: number }
       {shown.toLocaleString()}
     </Animated.Text>
   );
-}
+});
 
-function TopBar({ total, onClose }: { total: number; onClose: () => void }) {
+const TopBar = React.memo(function TopBar({ total, onClose }: { total: number; onClose: () => void }) {
   const coin = 58;
   const pillH = 44;
   return (
@@ -207,7 +207,7 @@ function TopBar({ total, onClose }: { total: number; onClose: () => void }) {
       </Pressable>
     </View>
   );
-}
+});
 
 export default function SlotMachine() {
   const { width: rawWidth, height } = useWindowDimensions();
@@ -315,13 +315,17 @@ export default function SlotMachine() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keep height available inside the PanResponder (created once via useRef).
+  const heightRef = useRef(height);
+  heightRef.current = height;
+
   const machineRef = useRef<View>(null);
   const [originY, setOriginY] = useState(0);
-  const onMachineLayout = (_e: LayoutChangeEvent) => {
+  const onMachineLayout = useCallback((_e: LayoutChangeEvent) => {
     machineRef.current?.measureInWindow((_x, y, _w, h) =>
       setOriginY(y + h * (REEL_WINDOW.y + REEL_WINDOW.h / 2))
     );
-  };
+  }, []);
 
   // ── Page navigation ───────────────────────────────────────────────────────
 
@@ -345,12 +349,11 @@ export default function SlotMachine() {
     }).start();
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (Platform.OS === 'web') {
       // @ts-ignore
       window.location.reload();
     } else {
-      // Native: reset all game state
       setSpinsLeft(SPINS_MAX);
       spinsLeftRef.current = SPINS_MAX;
       setTotal(12384);
@@ -365,7 +368,8 @@ export default function SlotMachine() {
       currentPageRef.current = 0;
       pageTranslate.setValue(0);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Bounce in the LET'S GO graphic, then shoot down to the games world.
   const triggerLetsGo = () => {
@@ -402,18 +406,18 @@ export default function SlotMachine() {
       Math.abs(gs.dy) > 14 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5,
     onPanResponderGrant: () => pageTranslate.stopAnimation(),
     onPanResponderMove: (_, gs) => {
-      const base = currentPageRef.current === 0 ? 0 : -(height * 3);
-      // Damped pull — quarter resistance so it follows the finger but resists.
+      const h = heightRef.current;
+      const base = currentPageRef.current === 0 ? 0 : -(h * 3);
       pageTranslate.setValue(base + gs.dy * 0.25);
     },
     onPanResponderRelease: (_, gs) => {
+      const h = heightRef.current;
       if (currentPageRef.current === 1 && gs.dy > 60) {
         navigateToSlots();
       } else if (currentPageRef.current === 0 && gs.dy < -60) {
         navigateToGames();
       } else {
-        // Didn't cross threshold — spring back to the current page.
-        const base = currentPageRef.current === 0 ? 0 : -(height * 3);
+        const base = currentPageRef.current === 0 ? 0 : -(h * 3);
         Animated.spring(pageTranslate, {
           toValue: base,
           tension: 200,
@@ -482,7 +486,7 @@ export default function SlotMachine() {
         <View style={{ height }}>
           <Animated.View style={{ flex: 1, opacity: reveal }}>
 
-            {/* Rotating sunburst, behind everything */}
+            {/* Rotating sunburst — plain PNG, no SVG parsing overhead */}
             <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center' }]}>
               <Animated.View style={[{
                 width: Math.sqrt(width * width + height * height) * 1.1,
@@ -490,7 +494,7 @@ export default function SlotMachine() {
                 opacity: 0.10,
                 transform: [{ rotate: sunRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }],
               }, Platform.OS === 'web' && { filter: 'brightness(1000)' } as any]}>
-                <Sunburst width="100%" height="100%" />
+                <Image source={SUNBURST} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </Animated.View>
             </View>
 
@@ -671,7 +675,7 @@ function GamesPage({ shellW, width }: { shellW: number; width: number }) {
   );
 }
 
-function SpinButton({ width, onPress, disabled }: { width: number; onPress: () => void; disabled?: boolean }) {
+const SpinButton = React.memo(function SpinButton({ width, onPress, disabled }: { width: number; onPress: () => void; disabled?: boolean }) {
   const height = width / SPIN_BUTTON_ASPECT;
   const press = useRef(new Animated.Value(0)).current;
   const to = (v: number) =>
@@ -689,7 +693,7 @@ function SpinButton({ width, onPress, disabled }: { width: number; onPress: () =
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
