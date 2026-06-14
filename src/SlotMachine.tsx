@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SvgXml } from 'react-native-svg';
 import {
   Animated,
   DimensionValue,
@@ -583,14 +584,33 @@ export default function SlotMachine() {
 }
 
 const FEATURED_GAME = require('../assets/game37.png');
-const WORLD_IMG = require('../assets/world_img.png');
+const LOWER_BG   = require('../assets/lower/lower_bg.png');
+const GAME_WHEEL  = require('../assets/lower/wheel.png');
+const GAME_ARCADE = require('../assets/lower/arcade.png');
+const GAME_VAULT  = require('../assets/lower/vault.png');
+const GAME_FLIP   = require('../assets/lower/flip.png');
+const GAME_SCRATCH = require('../assets/lower/scratch.png');
+const GAME_MERCH  = require('../assets/lower/merch.png');
+
+// MrQ logo — SVG exported from Figma (mislabelled .png)
+const MRQ_LOGO_SVG = `<svg width="220" height="86" viewBox="0 0 220 86" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M203.691 69.8664C198.255 69.8664 193.231 68.2738 188.965 65.6425C193.025 59.0644 195.433 51.2399 195.433 42.9308C195.433 19.2496 176.303 0 152.768 0C129.234 0 110.103 19.2496 110.103 42.9308C110.103 66.6119 129.234 85.8615 152.768 85.8615C162.196 85.8615 170.935 82.7456 177.954 77.5523C185.18 82.8148 194.057 86 203.691 86C209.471 86 214.977 84.8921 220 82.8148V64.5346C215.458 67.9275 209.815 69.8664 203.691 69.8664ZM176.922 50.963C173.757 47.5701 170.041 44.5926 165.774 42.2383C161.576 39.9533 157.172 38.4299 152.768 37.599V54.0789C154.626 54.6329 156.415 55.3945 158.136 56.2947C161.783 58.3027 164.811 61.0032 167.15 64.1192C163.09 66.9582 158.136 68.62 152.837 68.62C138.799 68.6892 127.376 57.2641 127.376 43.1385C127.376 29.0129 138.73 17.5878 152.768 17.5878C166.806 17.5878 178.161 29.0129 178.161 43.1385C178.161 45.9082 177.748 48.5395 176.922 50.963ZM31.4482 45.0773L15.8273 2.97745H0V83.0226C4.67939 80.5298 10.391 78.037 16.9972 75.6828V42.6538L28.0763 72.1514C30.4848 71.4589 32.9622 70.7665 35.5771 70.1433L45.8993 42.723V67.6506C50.097 66.7504 61.5202 64.8116 62.8965 64.6039V2.97745H45.8993L31.4482 45.0773ZM96.065 4.02995C93.6496 5.51175 92.3353 8.30225 91.5026 10.9196C90.4429 14.2641 89.6722 17.3593 89.218 20.8422C89.2111 20.9114 89.1423 21.4931 88.9084 21.4931C88.6813 21.4931 88.7019 21.0776 88.7019 21.0776V2.9913H71.4295V63.3575C77.4163 62.5958 83.1968 62.1111 88.7019 61.8341V30.6886C88.7019 29.6499 88.7707 28.542 88.9084 27.5034C89.046 26.6032 89.3212 25.7031 89.9406 25.0106C90.2158 24.6644 90.6287 24.3874 91.0416 24.1797C92.1426 23.5565 93.3813 23.418 94.62 23.3488C96.6844 23.2796 103.359 23.2103 103.359 23.2103V2.9913H100.194C98.7488 3.06054 97.3037 3.26827 96.065 4.02995Z" fill="white"/></svg>`;
+
+// Game tile layout — positions as fraction of bg (752×1590 native).
+// cx/cy = centre of tile as fraction of display width/height.
+const GAME_TILES = [
+  { src: GAME_WHEEL,   w: 107, h: 137, cx: 0.50, cy: 0.335 },
+  { src: GAME_ARCADE,  w: 108, h: 120, cx: 0.225, cy: 0.475 },
+  { src: GAME_VAULT,   w: 105, h: 110, cx: 0.775, cy: 0.455 },
+  { src: GAME_FLIP,    w: 121, h: 114, cx: 0.50,  cy: 0.625 },
+  { src: GAME_SCRATCH, w: 127, h: 131, cx: 0.195, cy: 0.795 },
+  { src: GAME_MERCH,   w: 149, h: 141, cx: 0.775, cy: 0.795 },
+] as const;
 
 function GamesPage({ shellW, width, height, innerScrollRef }: {
   shellW: number; width: number; height: number;
   innerScrollRef: React.MutableRefObject<number>;
 }) {
-  const WORLD_NATIVE_H = width * (879 / 375);
-  // How far the image can travel upward before its bottom edge hits the viewport bottom.
+  const WORLD_NATIVE_H = width * (1590 / 752);
   const maxScroll = Math.max(0, WORLD_NATIVE_H - height);
   const maxScrollRef = useRef(maxScroll);
   maxScrollRef.current = maxScroll;
@@ -608,7 +628,6 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
   const scrollPan = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) => {
       if (Math.abs(gs.dy) <= 8 || Math.abs(gs.dy) <= Math.abs(gs.dx)) return false;
-      // At the very top, let downward drag fall through to the outer page-switch responder
       if (gs.dy > 0 && ((translateY as any)._value ?? 0) >= 0) return false;
       return true;
     },
@@ -622,22 +641,44 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
     },
     onPanResponderRelease: (_, gs) => {
       const next = Math.min(0, Math.max(-maxScrollRef.current, baseY.current + gs.dy + gs.vy * 80));
-      Animated.spring(translateY, {
-        toValue: next,
-        tension: 180,
-        friction: 22,
-        useNativeDriver: USE_NATIVE,
-      }).start();
+      Animated.spring(translateY, { toValue: next, tension: 180, friction: 22, useNativeDriver: USE_NATIVE }).start();
     },
   })).current;
 
+  const logoW = 220, logoH = 86;
+
   return (
-    <View
-      style={{ flex: 1, overflow: 'hidden' }}
-      {...scrollPan.panHandlers}
-    >
+    <View style={{ flex: 1, overflow: 'hidden' }} {...scrollPan.panHandlers}>
       <Animated.View style={{ transform: [{ translateY }] }}>
-        <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
+        <View style={{ width, height: WORLD_NATIVE_H }}>
+          {/* Background */}
+          <Image source={LOWER_BG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="stretch" />
+
+          {/* MrQ logo */}
+          <View style={{
+            position: 'absolute',
+            top: WORLD_NATIVE_H * 0.14,
+            left: (width - logoW) / 2,
+          }}>
+            <SvgXml xml={MRQ_LOGO_SVG} width={logoW} height={logoH} />
+          </View>
+
+          {/* Game tiles */}
+          {GAME_TILES.map(({ src, w, h, cx, cy }, i) => (
+            <Image
+              key={i}
+              source={src}
+              style={{
+                position: 'absolute',
+                width: w,
+                height: h,
+                left: width * cx - w / 2,
+                top: WORLD_NATIVE_H * cy - h / 2,
+              }}
+              resizeMode="contain"
+            />
+          ))}
+        </View>
       </Animated.View>
     </View>
   );
