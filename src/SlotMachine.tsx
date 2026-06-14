@@ -673,27 +673,41 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   const handlePressOut = (i: number) =>
     Animated.spring(pressScales[i], { toValue: 1, tension: 220, friction: 12, useNativeDriver: USE_NATIVE }).start();
 
-  // Logo bounce then staggered tile pop-in whenever the games page becomes active.
+  // Entrance: world scrolls up, logo bounces in, then tiles stagger.
   useEffect(() => {
     if (trigger === 0) return;
     logoScale.setValue(0);
     tileScales.forEach(a => a.setValue(0));
-    Animated.sequence([
-      // Logo bounces in first
+
+    // Start world pushed down so tiles are below the fold, then slowly reveal
+    const START_OFFSET = 220;
+    translateY.setValue(START_OFFSET);
+
+    Animated.parallel([
+      // World scrolls up slowly into resting position
+      Animated.timing(translateY, {
+        toValue: -INITIAL_SCROLL,
+        duration: 1100,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: USE_NATIVE,
+      }),
+      // Logo + tiles sequence on top of the scroll
       Animated.sequence([
-        Animated.timing(logoScale, { toValue: 1.25, duration: 200, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
-        Animated.spring(logoScale, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+        Animated.delay(120),
+        Animated.sequence([
+          Animated.timing(logoScale, { toValue: 1.25, duration: 200, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
+          Animated.spring(logoScale, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+        ]),
+        Animated.stagger(
+          120,
+          tileScales.map(anim =>
+            Animated.sequence([
+              Animated.timing(anim, { toValue: 1.3, duration: 160, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
+              Animated.spring(anim, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+            ])
+          )
+        ),
       ]),
-      // Then tiles stagger in
-      Animated.stagger(
-        120,
-        tileScales.map(anim =>
-          Animated.sequence([
-            Animated.timing(anim, { toValue: 1.3, duration: 160, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
-            Animated.spring(anim, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
-          ])
-        )
-      ),
     ]).start();
   }, [trigger]);
 
