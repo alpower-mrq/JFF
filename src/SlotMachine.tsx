@@ -506,7 +506,7 @@ export default function SlotMachine() {
               <Animated.View style={[{
                 width: Math.sqrt(width * width + height * height) * 1.1,
                 height: Math.sqrt(width * width + height * height) * 1.1,
-                opacity: 0.10,
+                opacity: 0.06,
                 transform: [{ rotate: sunRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }],
               }, Platform.OS === 'web' && { filter: 'brightness(1000)' } as any]}>
                 <Image source={SUNBURST} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
