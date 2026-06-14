@@ -568,11 +568,7 @@ export default function SlotMachine() {
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
-          {/* Clouds first so game tiles render on top */}
-          <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
-            <BottomClouds width={width} height={width / (375 / 183)} />
-          </View>
-          <GamesPage shellW={shellW} width={width} innerScrollRef={innerScrollRef} />
+          <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} />
         </View>
 
       </Animated.View>
@@ -589,12 +585,15 @@ export default function SlotMachine() {
 const FEATURED_GAME = require('../assets/game37.png');
 const WORLD_IMG = require('../assets/world_img.png');
 
-function GamesPage({ shellW, width, innerScrollRef }: {
-  shellW: number; width: number;
+function GamesPage({ shellW, width, height, innerScrollRef }: {
+  shellW: number; width: number; height: number;
   innerScrollRef: React.MutableRefObject<number>;
 }) {
   const WORLD_NATIVE_H = width * (879 / 375);
-  const maxScrollRef = useRef(0);
+  // How far the image can travel upward before its bottom edge hits the viewport bottom.
+  const maxScroll = Math.max(0, WORLD_NATIVE_H - height);
+  const maxScrollRef = useRef(maxScroll);
+  maxScrollRef.current = maxScroll;
 
   const translateY = useRef(new Animated.Value(0)).current;
   const baseY = useRef(0);
@@ -607,8 +606,12 @@ function GamesPage({ shellW, width, innerScrollRef }: {
   }, [translateY, innerScrollRef]);
 
   const scrollPan = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gs) =>
-      Math.abs(gs.dy) > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
+    onMoveShouldSetPanResponder: (_, gs) => {
+      if (Math.abs(gs.dy) <= 8 || Math.abs(gs.dy) <= Math.abs(gs.dx)) return false;
+      // At the very top, let downward drag fall through to the outer page-switch responder
+      if (gs.dy > 0 && ((translateY as any)._value ?? 0) >= 0) return false;
+      return true;
+    },
     onPanResponderGrant: () => {
       translateY.stopAnimation();
       baseY.current = (translateY as any)._value ?? 0;
@@ -628,15 +631,9 @@ function GamesPage({ shellW, width, innerScrollRef }: {
     },
   })).current;
 
-  const featW = width * 0.82;
-  const featH = featW;
-
   return (
     <View
       style={{ flex: 1, overflow: 'hidden' }}
-      onLayout={(e) => {
-        maxScrollRef.current = Math.max(0, WORLD_NATIVE_H - e.nativeEvent.layout.height);
-      }}
       {...scrollPan.panHandlers}
     >
       <Animated.View style={{ transform: [{ translateY }] }}>
