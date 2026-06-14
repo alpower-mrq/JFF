@@ -621,9 +621,9 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   innerScrollRef: React.MutableRefObject<number>;
   trigger: number;
 }) {
-  const WORLD_NATIVE_H = Math.max(height, width * (1590 / 752));
   const INITIAL_SCROLL = 70;
-  const maxScroll = Math.max(0, WORLD_NATIVE_H - height) + INITIAL_SCROLL;
+  const WORLD_NATIVE_H = Math.max(height + INITIAL_SCROLL, width * (1590 / 752));
+  const maxScroll = WORLD_NATIVE_H - height;
   const maxScrollRef = useRef(maxScroll);
   maxScrollRef.current = maxScroll;
 
