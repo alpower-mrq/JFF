@@ -404,6 +404,7 @@ export default function SlotMachine() {
     ]).start(() => {
       setShowLetsgo(false);
       currentPageRef.current = 1;
+      setGamesTrigger(t => t + 1);
     });
   };
 
@@ -631,14 +632,14 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     if (trigger === 0) return;
     tileScales.forEach(a => a.setValue(0));
     Animated.stagger(
-      90,
+      120,
       tileScales.map(anim =>
-        Animated.spring(anim, {
-          toValue: 1,
-          tension: 280,
-          friction: 10,
-          useNativeDriver: USE_NATIVE,
-        })
+        Animated.sequence([
+          // Overshoot up
+          Animated.timing(anim, { toValue: 1.3, duration: 160, easing: Easing.out(Easing.back(1.5)), useNativeDriver: USE_NATIVE }),
+          // Settle back
+          Animated.spring(anim, { toValue: 1, tension: 200, friction: 7, useNativeDriver: USE_NATIVE }),
+        ])
       )
     ).start();
   }, [trigger]);
@@ -671,7 +672,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   })).current;
 
   const scale = width / 376;
-  const logoW = 220 * scale, logoH = 86 * scale;
+  const logoW = 220 * scale * 0.6, logoH = 86 * scale * 0.6;
 
   return (
     <View style={{ flex: 1, overflow: 'hidden' }} {...scrollPan.panHandlers}>
