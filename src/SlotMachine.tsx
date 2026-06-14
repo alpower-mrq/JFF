@@ -415,6 +415,7 @@ export default function SlotMachine() {
       // On games page, only claim a downward swipe (back to slots) when the
       // inner content scroll is already at the very top.
       if (currentPageRef.current === 1 && gs.dy > 0 && innerScrollRef.current > 4) return false;
+      if (currentPageRef.current === 1 && gs.dy < 0) return false;
       return true;
     },
     onPanResponderGrant: () => pageTranslate.stopAnimation(),
