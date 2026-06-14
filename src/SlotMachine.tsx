@@ -728,34 +728,74 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
         </View>
       </Animated.View>
 
-      {/* Game modal */}
+      {/* Game modal — bottom sheet */}
       <Modal
         visible={openModal !== null}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setOpenModal(null)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: '85%', backgroundColor: '#0d1b6e', borderRadius: 24, padding: 28, borderWidth: 1, borderColor: '#3d52cc' }}>
-            {openModal !== null && (
-              <>
-                <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', marginBottom: 4 }}>
-                  {GAME_TILES[openModal].label}
-                </Text>
-                <Text style={{ color: '#c8affe', fontSize: 13, fontWeight: '600', letterSpacing: 1, marginBottom: 20, textTransform: 'uppercase' }}>
-                  {GAME_TILES[openModal].subtitle}
-                </Text>
-                <Text style={{ color: '#a0a8e8', fontSize: 15, lineHeight: 22, marginBottom: 28 }}>
-                  This is where the {GAME_TILES[openModal].label} experience will live.
-                </Text>
-              </>
-            )}
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,20,0.82)', justifyContent: 'flex-end' }}>
+          {/* Tap backdrop to close */}
+          <Pressable style={{ flex: 1 }} onPress={() => setOpenModal(null)} />
+          <View style={{
+            backgroundColor: '#070b3a',
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            borderWidth: 1,
+            borderBottomWidth: 0,
+            borderColor: '#1e2d8a',
+            paddingBottom: 44,
+          }}>
+            {/* Drag handle */}
+            <View style={{ alignItems: 'center', paddingTop: 12, marginBottom: 4 }}>
+              <View style={{ width: 38, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' }} />
+            </View>
+
+            {/* Close X */}
             <Pressable
               onPress={() => setOpenModal(null)}
-              style={{ alignSelf: 'center', backgroundColor: '#3d52cc', paddingHorizontal: 32, paddingVertical: 13, borderRadius: 30 }}
+              style={{ position: 'absolute', top: 16, right: 20, padding: 8 }}
             >
-              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>Close</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 20, lineHeight: 20 }}>✕</Text>
             </Pressable>
+
+            {openModal !== null && (
+              <>
+                {/* Tile image */}
+                <View style={{ alignItems: 'center', paddingTop: 24, paddingBottom: 12 }}>
+                  <Image
+                    source={GAME_TILES[openModal].src}
+                    style={{ width: 140, height: 140 }}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                {/* Gold accent line */}
+                <View style={{ height: 1, backgroundColor: '#c9a227', marginHorizontal: 60, borderRadius: 1, opacity: 0.5, marginBottom: 20 }} />
+
+                {/* Title + subtitle */}
+                <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, marginBottom: 4, paddingHorizontal: 24 }}>
+                  {GAME_TILES[openModal].label}
+                </Text>
+                <Text style={{ color: '#c9a227', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginBottom: 18 }}>
+                  {GAME_TILES[openModal].subtitle}
+                </Text>
+
+                {/* Body */}
+                <Text style={{ color: '#7880b8', fontSize: 14, lineHeight: 21, textAlign: 'center', paddingHorizontal: 36, marginBottom: 32 }}>
+                  This is where the {GAME_TILES[openModal].label} experience will live.
+                </Text>
+
+                {/* CTA */}
+                <Pressable
+                  onPress={() => setOpenModal(null)}
+                  style={{ marginHorizontal: 36, backgroundColor: '#c9a227', paddingVertical: 15, borderRadius: 30, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
       </Modal>
