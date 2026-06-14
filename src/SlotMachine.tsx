@@ -770,8 +770,8 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
           <Animated.View
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,20,0.82)', opacity: backdropOpacity }]}
           />
-          {/* Tap backdrop to close */}
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
+          {/* Tap area above sheet to close — flex:1 so it doesn't overlap the sheet */}
+          <Pressable style={{ flex: 1, width: '100%' }} onPress={closeModal} />
 
           {/* Sheet slides up */}
           <Animated.View style={{
@@ -805,13 +805,13 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                   <Text style={{ color: 'white', fontSize: 26, fontWeight: '800', textAlign: 'center', letterSpacing: 0.3, paddingHorizontal: 24 }}>
                     {GAME_TILES[modalIndex].label}
                   </Text>
-                  <Text style={{ color: '#e8a020', fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginTop: 4 }}>
+                  <Text style={{ color: GOLD, fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textAlign: 'center', textTransform: 'uppercase', marginTop: 4 }}>
                     {GAME_TILES[modalIndex].subtitle}
                   </Text>
                 </View>
 
                 {/* Gold accent line */}
-                <View style={{ height: 1, backgroundColor: '#e8a020', marginHorizontal: 60, borderRadius: 1, opacity: 0.4, marginTop: 16, marginBottom: 20 }} />
+                <View style={{ height: 1, backgroundColor: GOLD, marginHorizontal: 60, borderRadius: 1, opacity: 0.4, marginTop: 16, marginBottom: 20 }} />
 
                 {modalIndex === 1 ? (
                   /* Arcade: 2×2 game picker */
@@ -839,9 +839,9 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
                     </Text>
                     <Pressable
                       onPress={closeModal}
-                      style={{ marginHorizontal: 36, backgroundColor: '#e8a020', paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginBottom: 0 }}
+                      style={{ marginHorizontal: 36, backgroundColor: GOLD, paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginBottom: 0 }}
                     >
-                      <Text style={{ color: '#07093a', fontWeight: '800', fontSize: 16, letterSpacing: 0.4 }}>Play Now</Text>
+                      <Text style={{ color: '#07093a', fontFamily: FONT, fontSize: 18, letterSpacing: 1 }}>Play Now</Text>
                     </Pressable>
                   </>
                 )}
