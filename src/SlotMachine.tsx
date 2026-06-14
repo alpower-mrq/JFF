@@ -611,11 +611,14 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
   innerScrollRef: React.MutableRefObject<number>;
 }) {
   const WORLD_NATIVE_H = width * (1590 / 752);
-  const maxScroll = Math.max(0, WORLD_NATIVE_H - height);
+  // Pre-scroll 70pt into the image so the world sits higher on arrival.
+  // Expand the scroll range by the same amount so the natural bottom limit is preserved.
+  const INITIAL_SCROLL = 70;
+  const maxScroll = Math.max(0, WORLD_NATIVE_H - height) + INITIAL_SCROLL;
   const maxScrollRef = useRef(maxScroll);
   maxScrollRef.current = maxScroll;
 
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-INITIAL_SCROLL)).current;
   const baseY = useRef(0);
 
   useEffect(() => {
