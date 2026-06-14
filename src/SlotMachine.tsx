@@ -234,6 +234,7 @@ export default function SlotMachine() {
   const busy = useRef(false);
 
   // Two-page navigation: 0 = slots, 1 = games.
+  const [gamesTrigger, setGamesTrigger] = useState(0);
   const currentPageRef = useRef<0 | 1>(0);
   const spinsLeftRef   = useRef(SPINS_MAX);
   const pageTranslate  = useRef(new Animated.Value(0)).current;
@@ -342,7 +343,7 @@ export default function SlotMachine() {
       duration: 280,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: USE_NATIVE,
-    }).start();
+    }).start(() => setGamesTrigger(t => t + 1));
   };
 
   const navigateToSlots = () => {
@@ -569,7 +570,7 @@ export default function SlotMachine() {
 
         {/* ── Page 1: Q Arcade ── */}
         <View style={{ height, backgroundColor: SKY }}>
-          <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} />
+          <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} trigger={gamesTrigger} />
         </View>
 
       </Animated.View>
@@ -606,13 +607,12 @@ const GAME_TILES = [
   { src: GAME_MERCH,   x: 238, y: 576, w: 149, h: 141 },
 ] as const;
 
-function GamesPage({ shellW, width, height, innerScrollRef }: {
+function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   shellW: number; width: number; height: number;
   innerScrollRef: React.MutableRefObject<number>;
+  trigger: number;
 }) {
   const WORLD_NATIVE_H = width * (1590 / 752);
-  // Pre-scroll 70pt into the image so the world sits higher on arrival.
-  // Expand the scroll range by the same amount so the natural bottom limit is preserved.
   const INITIAL_SCROLL = 70;
   const maxScroll = Math.max(0, WORLD_NATIVE_H - height) + INITIAL_SCROLL;
   const maxScrollRef = useRef(maxScroll);
@@ -620,6 +620,28 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
 
   const translateY = useRef(new Animated.Value(-INITIAL_SCROLL)).current;
   const baseY = useRef(0);
+
+  // One scale Animated.Value per tile — all start hidden (0).
+  const tileScales = useRef(
+    Array.from({ length: GAME_TILES.length }, () => new Animated.Value(0))
+  ).current;
+
+  // Staggered pop-in whenever the games page becomes active.
+  useEffect(() => {
+    if (trigger === 0) return;
+    tileScales.forEach(a => a.setValue(0));
+    Animated.stagger(
+      90,
+      tileScales.map(anim =>
+        Animated.spring(anim, {
+          toValue: 1,
+          tension: 280,
+          friction: 10,
+          useNativeDriver: USE_NATIVE,
+        })
+      )
+    ).start();
+  }, [trigger]);
 
   useEffect(() => {
     const id = translateY.addListener(({ value }) => {
@@ -648,7 +670,6 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
     },
   })).current;
 
-  // Scale factor: Figma bg is 376×795 pt; we stretch it to fill `width`.
   const scale = width / 376;
   const logoW = 220 * scale, logoH = 86 * scale;
 
@@ -659,14 +680,14 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
           {/* Background */}
           <Image source={LOWER_BG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="stretch" />
 
-          {/* MrQ logo — Figma: x=81, y=156 relative to bg */}
+          {/* MrQ logo */}
           <View style={{ position: 'absolute', left: 81 * scale, top: 156 * scale }}>
             <SvgXml xml={MRQ_LOGO_SVG} width={logoW} height={logoH} />
           </View>
 
-          {/* Game tiles — exact Figma coords scaled to display width */}
+          {/* Game tiles — pop in sequentially on arrival */}
           {GAME_TILES.map(({ src, x, y, w, h }, i) => (
-            <Image
+            <Animated.Image
               key={i}
               source={src}
               style={{
@@ -675,6 +696,7 @@ function GamesPage({ shellW, width, height, innerScrollRef }: {
                 height: h * scale,
                 left: x * scale,
                 top: y * scale,
+                transform: [{ scale: tileScales[i] }],
               }}
               resizeMode="contain"
             />
