@@ -319,6 +319,11 @@ export default function SlotMachine() {
   const heightRef = useRef(height);
   heightRef.current = height;
 
+  // Tracks how far the games page has been scrolled (0 = at top).
+  // Read by the outer PanResponder so it only claims a downward swipe
+  // (→ navigate back to slots) when the inner scroll is already at the top.
+  const innerScrollRef = useRef(0);
+
   const machineRef = useRef<View>(null);
   const [originY, setOriginY] = useState(0);
   const onMachineLayout = useCallback((_e: LayoutChangeEvent) => {
@@ -402,8 +407,13 @@ export default function SlotMachine() {
 
   // Swipe down on games → back to slots; swipe up on slots → games (any time).
   const panResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gs) =>
-      Math.abs(gs.dy) > 14 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5,
+    onMoveShouldSetPanResponder: (_, gs) => {
+      if (Math.abs(gs.dy) <= 14 || Math.abs(gs.dy) <= Math.abs(gs.dx) * 1.5) return false;
+      // On games page, only claim a downward swipe (back to slots) when the
+      // inner content scroll is already at the very top.
+      if (currentPageRef.current === 1 && gs.dy > 0 && innerScrollRef.current > 4) return false;
+      return true;
+    },
     onPanResponderGrant: () => pageTranslate.stopAnimation(),
     onPanResponderMove: (_, gs) => {
       const h = heightRef.current;
@@ -562,7 +572,7 @@ export default function SlotMachine() {
           <View style={[StyleSheet.absoluteFill, { justifyContent: 'flex-end', pointerEvents: 'none' }]}>
             <BottomClouds width={width} height={width / (375 / 183)} />
           </View>
-          <GamesPage shellW={shellW} width={width} />
+          <GamesPage shellW={shellW} width={width} height={height} innerScrollRef={innerScrollRef} />
         </View>
 
       </Animated.View>
@@ -579,33 +589,69 @@ export default function SlotMachine() {
 const FEATURED_GAME = require('../assets/game37.png');
 const WORLD_IMG = require('../assets/world_img.png');
 
-function GamesPage({ shellW, width }: { shellW: number; width: number }) {
+function GamesPage({ shellW, width, height, innerScrollRef }: {
+  shellW: number; width: number; height: number;
+  innerScrollRef: React.MutableRefObject<number>;
+}) {
+  const WORLD_NATIVE_H = width * (879 / 375);
+  // How far we can scroll before the bottom of the image hits the bottom of the page.
+  const maxScroll = Math.max(0, WORLD_NATIVE_H - height);
+
+  // translateY: 0 = world image at top of page, -maxScroll = bottom of image visible.
+  const translateY = useRef(new Animated.Value(0)).current;
+  const baseY = useRef(0); // value of translateY at the start of each gesture
+
+  useEffect(() => {
+    const id = translateY.addListener(({ value }) => {
+      innerScrollRef.current = -value; // positive = scrolled down
+    });
+    return () => translateY.removeListener(id);
+  }, [translateY, innerScrollRef]);
+
+  const scrollPan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gs) =>
+      Math.abs(gs.dy) > 8 && Math.abs(gs.dy) > Math.abs(gs.dx),
+    onPanResponderGrant: () => {
+      translateY.stopAnimation();
+      baseY.current = (translateY as any)._value ?? 0;
+    },
+    onPanResponderMove: (_, gs) => {
+      const next = Math.min(0, Math.max(-maxScroll, baseY.current + gs.dy));
+      translateY.setValue(next);
+    },
+    onPanResponderRelease: (_, gs) => {
+      // Momentum: flick continues a little past release.
+      const next = Math.min(0, Math.max(-maxScroll, baseY.current + gs.dy + gs.vy * 80));
+      Animated.spring(translateY, {
+        toValue: next,
+        tension: 180,
+        friction: 22,
+        useNativeDriver: USE_NATIVE,
+      }).start();
+    },
+  })).current;
+
   const featW = width * 0.82;
   const featH = featW;
-  // world_img is 375×879 — preserve aspect ratio at full width
-  const worldH = width * (879 / 375);
 
   return (
-    <View style={{ flex: 1, paddingTop: 70 }}>
-      <Text style={{
-        color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175,
-        letterSpacing: 4, textAlign: 'center', marginBottom: 20,
-      }}>
-        Q ARCADE
-      </Text>
+    <View style={{ width, height, overflow: 'hidden' }} {...scrollPan.panHandlers}>
+      {/* Scrollable world image — starts at top, user pulls down to reveal more */}
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <Image source={WORLD_IMG} style={{ width, height: WORLD_NATIVE_H }} resizeMode="cover" />
+      </Animated.View>
 
-      {/* Featured tile */}
-      <Image
-        source={FEATURED_GAME}
-        style={{ width: featW, height: featH, alignSelf: 'center', borderRadius: 22 }}
-        resizeMode="cover"
-      />
-
-      {/* World image — sits over the bottom clouds */}
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* Title + featured tile overlaid at the top */}
+      <View style={{ position: 'absolute', top: 70, left: 0, right: 0, alignItems: 'center' }}>
+        <Text style={{
+          color: '#fff', fontFamily: FONT, fontSize: shellW * 0.175,
+          letterSpacing: 4, textAlign: 'center', marginBottom: 20,
+        }}>
+          Q ARCADE
+        </Text>
         <Image
-          source={WORLD_IMG}
-          style={{ width, height: worldH }}
+          source={FEATURED_GAME}
+          style={{ width: featW, height: featH, borderRadius: 22 }}
           resizeMode="cover"
         />
       </View>
