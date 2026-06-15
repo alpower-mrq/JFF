@@ -5,7 +5,6 @@ import {
   Platform,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { SYMBOLS } from './symbols';
 
@@ -33,14 +32,15 @@ export default function CoinCelebration({
   trigger,
   originY,
   shellW,
+  width,
   count = 10,
 }: {
   trigger: number;
   originY: number;
   shellW: number;
+  width: number;
   count?: number;
 }) {
-  const { width } = useWindowDimensions();
   const vals = useRef(
     Array.from({ length: MAX }, () => new Animated.Value(0))
   ).current;
