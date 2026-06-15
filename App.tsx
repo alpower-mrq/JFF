@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, View, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import SlotMachine from './src/SlotMachine';
 
 const isWeb = Platform.OS === 'web';
@@ -25,13 +25,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // Full viewport — dark surround on desktop so the phone column stands out.
   backdrop: {
     flex: 1,
     backgroundColor: isWeb ? '#000' : undefined,
     alignItems: isWeb ? 'center' : undefined,
   },
-  // Mobile-width column: 430px max on web, full screen on native.
   phone: {
     flex: 1,
     width: isWeb ? '100%' : undefined,

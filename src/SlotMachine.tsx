@@ -590,7 +590,6 @@ const LOWER_BG   = require('../assets/lower/lower_bg.png');
 const GAME_WHEEL  = require('../assets/lower/wheel.png');
 const GAME_ARCADE = require('../assets/lower/arcade.png');
 const GAME_VAULT  = require('../assets/lower/vault.png');
-const GAME_FLIP   = require('../assets/lower/flip.png');
 const GAME_SCRATCH = require('../assets/lower/scratch.png');
 const GAME_MERCH  = require('../assets/lower/merch.png');
 
@@ -612,7 +611,6 @@ const GAME_TILES = [
   { src: GAME_WHEEL,   x: 136, y: 315, w: S, h: S, label: 'Q Wheel',    subtitle: 'Spin & Win' },
   { src: GAME_ARCADE,  x:   4, y: 402, w: S, h: S, label: 'Arcade',     subtitle: 'Play & Win' },
   { src: GAME_VAULT,   x: 259, y: 413, w: S, h: S, label: 'Q Vault',    subtitle: 'Unlock Rewards' },
-  { src: GAME_FLIP,    x: 130, y: 505, w: 137, h: 137, label: 'Flip Coin',  subtitle: 'Win Coins' },
   { src: GAME_SCRATCH, x:   5, y: 622, w: S, h: S, label: 'Scratch',    subtitle: 'Match & Win' },
   { src: GAME_MERCH,   x: 267, y: 618, w: S, h: S, label: 'Merch Shop', subtitle: 'Prizes & Goodies' },
 ] as const;
