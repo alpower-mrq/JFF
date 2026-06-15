@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { SvgXml } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Stop, Rect as SvgRect } from 'react-native-svg';
 import {
   Animated,
   DimensionValue,
@@ -41,7 +42,7 @@ const JACKPOT_SOUND = require('../assets/jackpot.mp3');
 const INTRO_SOUND = require('../assets/MrQ.m4a');
 const BG_SOUND = require('../assets/bgGrils.m4a');
 const SCROLL_START = 2.3;
-const BG_VOLUME = 0.15;
+const BG_VOLUME = 0.07;
 
 const FONT = 'FormulaCondensed-Bold';
 const LETSGO_ASPECT = 449 / 348;
@@ -293,26 +294,15 @@ export default function SlotMachine() {
       bgStarted = true;
       try { bg.loop = true; bg.volume = BG_VOLUME; bg.seekTo(0); bg.play(); } catch {}
     };
-    const sub = intro.addListener('playbackStatusUpdate', (s: any) => {
-      if (s && s.didJustFinish) startBg();
-    });
-    let started = false;
-    const startMusic = () => {
-      if (started) return;
-      started = true;
-      try { intro.volume = 1; intro.seekTo(0); intro.play(); } catch {}
-      setTimeout(startBg, 3000);
-    };
     let cleanupGesture: (() => void) | undefined;
     if (Platform.OS === 'web') {
-      const onFirst = () => startMusic();
+      const onFirst = () => startBg();
       window.addEventListener('pointerdown', onFirst, { once: true });
       cleanupGesture = () => window.removeEventListener('pointerdown', onFirst);
     } else {
-      startMusic();
+      startBg();
     }
     return () => {
-      if (sub && sub.remove) sub.remove();
       if (cleanupGesture) cleanupGesture();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -358,6 +348,8 @@ export default function SlotMachine() {
   };
 
   const handleClose = useCallback(() => {
+    try { intro.pause(); } catch {}
+    try { bg.pause(); } catch {}
     if (Platform.OS === 'web') {
       // @ts-ignore
       window.location.reload();
@@ -605,15 +597,24 @@ const GAME_MERCH  = require('../assets/lower/merch.png');
 // MrQ logo — SVG exported from Figma (mislabelled .png)
 const MRQ_LOGO_SVG = `<svg width="220" height="86" viewBox="0 0 220 86" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M203.691 69.8664C198.255 69.8664 193.231 68.2738 188.965 65.6425C193.025 59.0644 195.433 51.2399 195.433 42.9308C195.433 19.2496 176.303 0 152.768 0C129.234 0 110.103 19.2496 110.103 42.9308C110.103 66.6119 129.234 85.8615 152.768 85.8615C162.196 85.8615 170.935 82.7456 177.954 77.5523C185.18 82.8148 194.057 86 203.691 86C209.471 86 214.977 84.8921 220 82.8148V64.5346C215.458 67.9275 209.815 69.8664 203.691 69.8664ZM176.922 50.963C173.757 47.5701 170.041 44.5926 165.774 42.2383C161.576 39.9533 157.172 38.4299 152.768 37.599V54.0789C154.626 54.6329 156.415 55.3945 158.136 56.2947C161.783 58.3027 164.811 61.0032 167.15 64.1192C163.09 66.9582 158.136 68.62 152.837 68.62C138.799 68.6892 127.376 57.2641 127.376 43.1385C127.376 29.0129 138.73 17.5878 152.768 17.5878C166.806 17.5878 178.161 29.0129 178.161 43.1385C178.161 45.9082 177.748 48.5395 176.922 50.963ZM31.4482 45.0773L15.8273 2.97745H0V83.0226C4.67939 80.5298 10.391 78.037 16.9972 75.6828V42.6538L28.0763 72.1514C30.4848 71.4589 32.9622 70.7665 35.5771 70.1433L45.8993 42.723V67.6506C50.097 66.7504 61.5202 64.8116 62.8965 64.6039V2.97745H45.8993L31.4482 45.0773ZM96.065 4.02995C93.6496 5.51175 92.3353 8.30225 91.5026 10.9196C90.4429 14.2641 89.6722 17.3593 89.218 20.8422C89.2111 20.9114 89.1423 21.4931 88.9084 21.4931C88.6813 21.4931 88.7019 21.0776 88.7019 21.0776V2.9913H71.4295V63.3575C77.4163 62.5958 83.1968 62.1111 88.7019 61.8341V30.6886C88.7019 29.6499 88.7707 28.542 88.9084 27.5034C89.046 26.6032 89.3212 25.7031 89.9406 25.0106C90.2158 24.6644 90.6287 24.3874 91.0416 24.1797C92.1426 23.5565 93.3813 23.418 94.62 23.3488C96.6844 23.2796 103.359 23.2103 103.359 23.2103V2.9913H100.194C98.7488 3.06054 97.3037 3.26827 96.065 4.02995Z" fill="white"/></svg>`;
 
-// Exact positions from Figma (node 66:1864). Reference bg = 376×795 pt.
-// x/y = top-left of tile relative to bg top-left. Scale = display_width / 376.
+// Positions from Figma (node 66:1864). Reference bg = 392×829 pt.
+// All new assets are 311×311 square — uniform 115×115 display size.
+// x/y centres each tile on the Figma bounding-box centre. Scale = display_width / 392.
+// All tiles are 311×311 square — uniform S display size, centred on each Figma bounding-box centre.
+// Figma bounding-box data (frame 66:1864, bg origin x=6799 y=1190, scale=width/392):
+//   wheel(141,297,107,137) arcade(16,406,108,120) vault(262,412,105,110)
+//   flip(131,500,121,114) scratch(1,593,127,131) merch(244,594,149,141)
+const S = 127;
+// Tile positions keep each asset centred on its Figma bounding-box centre for S=115.
+// Figma bbox (x, y, w, h): wheel(141,297,107,137) arcade(16,406,108,120) vault(262,412,105,110)
+//   flip(131,500,121,114) scratch(1,593,127,131) merch(244,594,149,141)
 const GAME_TILES = [
-  { src: GAME_WHEEL,   x: 135, y: 279, w: 107, h: 137, label: 'Q Wheel',    subtitle: 'Spin & Win' },
-  { src: GAME_ARCADE,  x:  10, y: 388, w: 108, h: 120, label: 'Arcade',     subtitle: 'Play & Win' },
-  { src: GAME_VAULT,   x: 256, y: 394, w: 105, h: 110, label: 'Q Vault',    subtitle: 'Unlock Rewards' },
-  { src: GAME_FLIP,    x: 125, y: 482, w: 121, h: 114, label: 'Flir Coin',  subtitle: 'Win Coins' },
-  { src: GAME_SCRATCH, x:  -5, y: 575, w: 127, h: 131, label: 'Scratch',    subtitle: 'Match & Win' },
-  { src: GAME_MERCH,   x: 238, y: 576, w: 149, h: 141, label: 'Merch Shop', subtitle: 'Prizes & Goodies' },
+  { src: GAME_WHEEL,   x: 136, y: 315, w: S, h: S, label: 'Q Wheel',    subtitle: 'Spin & Win' },
+  { src: GAME_ARCADE,  x:   4, y: 402, w: S, h: S, label: 'Arcade',     subtitle: 'Play & Win' },
+  { src: GAME_VAULT,   x: 259, y: 413, w: S, h: S, label: 'Q Vault',    subtitle: 'Unlock Rewards' },
+  { src: GAME_FLIP,    x: 130, y: 505, w: 137, h: 137, label: 'Flip Coin',  subtitle: 'Win Coins' },
+  { src: GAME_SCRATCH, x:   5, y: 622, w: S, h: S, label: 'Scratch',    subtitle: 'Match & Win' },
+  { src: GAME_MERCH,   x: 267, y: 618, w: S, h: S, label: 'Merch Shop', subtitle: 'Prizes & Goodies' },
 ] as const;
 
 function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
@@ -658,6 +659,16 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   };
 
   const logoScale = useRef(new Animated.Value(0)).current;
+
+  // Starburst rotation for games page sky
+  const gamesSunRotate = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(gamesSunRotate, { toValue: 1, duration: 28000, easing: Easing.linear, useNativeDriver: USE_NATIVE })
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [gamesSunRotate]);
 
   // One scale Animated.Value per tile — all start hidden (0).
   const tileScales = useRef(
@@ -739,8 +750,8 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     },
   })).current;
 
-  const scale = width / 376;
-  const logoW = 220 * scale * 0.6, logoH = 86 * scale * 0.6;
+  const scale = width / 392;
+  const logoW = 182 * scale, logoH = 72 * scale;
 
   return (
     <View style={{ flex: 1, overflow: 'hidden' }} {...scrollPan.panHandlers}>
@@ -749,8 +760,9 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
           {/* Background */}
           <Image source={LOWER_BG} style={{ width, height: BG_NATIVE_H }} resizeMode="stretch" />
 
+
           {/* MrQ logo — bounces in before tiles */}
-          <Animated.View style={{ position: 'absolute', top: 191 * scale, left: 0, right: 0, alignItems: 'center', transform: [{ scale: logoScale }] }}>
+          <Animated.View style={{ position: 'absolute', top: 181 * scale, left: 0, right: 0, alignItems: 'center', transform: [{ scale: logoScale }] }}>
             <SvgXml xml={MRQ_LOGO_SVG} width={logoW} height={logoH} />
           </Animated.View>
 
