@@ -9,93 +9,106 @@ import {
 } from 'react-native';
 import { SYMBOLS } from './symbols';
 
-const MAX = 50; // pool size — the most coins we ever splash at once (a jackpot)
+const MAX = 18;
 const USE_NATIVE = Platform.OS !== 'web';
 
+// Reel area fractions — must match SlotMachine.tsx
+const REEL_AREA = { x: 0.105, y: 0.41, w: 0.79 };
+
+// TopBar coin icon center on screen
+const TARGET_X = 16 + 29; // left: 16, coin width: 58 → center at 45
+const TARGET_Y = 16 + 29;
+
 type CoinParam = {
-  dx: number;
-  rise: number;
-  fall: number;
-  spin: number;
+  startX: number;
+  startY: number;
+  burstDx: number;
+  burstDy: number;
   size: number;
   dur: number;
   delay: number;
 };
 
-/**
- * A burst of coins that erupts upward from `originY` (screen Y), arcs out, then
- * falls and fades. Re-fires whenever `trigger` changes.
- */
 export default function CoinCelebration({
   trigger,
   originY,
+  shellW,
   count = 10,
 }: {
   trigger: number;
   originY: number;
+  shellW: number;
   count?: number;
 }) {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const vals = useRef(
     Array.from({ length: MAX }, () => new Animated.Value(0))
   ).current;
   const [params, setParams] = useState<CoinParam[]>([]);
+
   useEffect(() => {
     if (trigger === 0) return;
-    // Splash exactly `count` coins (10 / 30 / 50 for single / pair / triple).
+
     const n = Math.max(1, Math.min(count, MAX));
-    const p: CoinParam[] = Array.from({ length: n }, () => ({
-      dx: (Math.random() * 2 - 1) * width * 0.5,
-      rise: height * (0.2 + Math.random() * 0.22),
-      fall: height * (0.55 + Math.random() * 0.45),
-      spin: (Math.random() * 2 - 1) * 720,
-      size: 28 + Math.random() * 22,
-      dur: 1500 + Math.random() * 800,
-      delay: Math.random() * 220,
-    }));
+
+    // Compute the 3 reel center X positions on screen
+    const shellLeft = (width - shellW) / 2;
+    const reelAreaLeft = shellLeft + REEL_AREA.x * shellW;
+    const reelW = (REEL_AREA.w * shellW) / 3;
+    const reelCenters = [0, 1, 2].map(i => reelAreaLeft + reelW * (i + 0.5));
+
+    const oy = originY > 0 ? originY : 300;
+
+    const p: CoinParam[] = Array.from({ length: n }, (_, i) => {
+      const reel = i % 3;
+      const sx = reelCenters[reel];
+      return {
+        startX: sx,
+        startY: oy,
+        burstDx: (Math.random() - 0.5) * reelW * 0.6,
+        burstDy: -(20 + Math.random() * 40),
+        size: 24 + Math.random() * 14,
+        dur: 700 + Math.random() * 300,
+        delay: Math.floor(i / 3) * 80 + Math.random() * 40,
+      };
+    });
+
     setParams(p);
-    Animated.parallel(
-      p.map((_, i) => {
-        vals[i].setValue(0);
-        return Animated.timing(vals[i], {
-          toValue: 1,
-          duration: p[i].dur,
-          delay: p[i].delay,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: USE_NATIVE,
-        });
-      })
-    ).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    vals.slice(0, n).forEach((v, i) => {
+      v.setValue(0);
+      Animated.timing(v, {
+        toValue: 1,
+        duration: p[i].dur,
+        delay: p[i].delay,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: USE_NATIVE,
+      }).start();
+    });
   }, [trigger]);
 
   if (params.length === 0) return null;
-  // Fallback if measureInWindow hasn't produced a value yet (web-safe).
-  const oy = originY > 0 ? originY : height * 0.34;
 
   return (
     <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {params.map((p, i) => {
         const v = vals[i];
+        // Phase 1 (0→0.2): burst outward from reel
+        // Phase 2 (0.2→1): zoom toward coin counter, shrinking
         const translateX = v.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, p.dx],
+          inputRange: [0, 0.2, 1],
+          outputRange: [p.startX, p.startX + p.burstDx, TARGET_X],
         });
         const translateY = v.interpolate({
-          inputRange: [0, 0.4, 1],
-          outputRange: [0, -p.rise, p.fall],
-        });
-        const rotate = v.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', `${p.spin}deg`],
-        });
-        const opacity = v.interpolate({
-          inputRange: [0, 0.8, 1],
-          outputRange: [1, 1, 0],
+          inputRange: [0, 0.2, 1],
+          outputRange: [p.startY, p.startY + p.burstDy, TARGET_Y],
         });
         const scale = v.interpolate({
-          inputRange: [0, 0.15, 1],
-          outputRange: [0.4, 1.1, 0.85],
+          inputRange: [0, 0.15, 0.85, 1],
+          outputRange: [0.2, 1.1, 0.5, 0.15],
+        });
+        const opacity = v.interpolate({
+          inputRange: [0, 0.08, 0.88, 1],
+          outputRange: [0, 1, 1, 0],
         });
         return (
           <Animated.Image
@@ -104,12 +117,12 @@ export default function CoinCelebration({
             resizeMode="contain"
             style={{
               position: 'absolute',
-              left: width / 2 - p.size / 2,
-              top: oy - p.size / 2,
+              left: -p.size / 2,
+              top: -p.size / 2,
               width: p.size,
               height: p.size,
               opacity,
-              transform: [{ translateX }, { translateY }, { rotate }, { scale }],
+              transform: [{ translateX }, { translateY }, { scale }],
             }}
           />
         );

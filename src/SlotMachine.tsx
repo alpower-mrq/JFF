@@ -552,7 +552,7 @@ export default function SlotMachine() {
               )}
             </View>
 
-            <CoinCelebration trigger={coinTrigger} originY={originY} count={coinCount} />
+            <CoinCelebration trigger={coinTrigger} originY={originY} shellW={shellW} count={coinCount} />
             <JackpotSymbol trigger={jackpotTrigger} symbol={jackpotSymbol} size={shellW * 0.46} centerX={width / 2} centerY={originY} />
           </Animated.View>
 
