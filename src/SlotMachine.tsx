@@ -668,12 +668,11 @@ export default function SlotMachine() {
                 )}
               </View>
 
-              {/* SPIN button — hidden during free spins or when out of spins */}
-              {!freeSpinsActive && spinsLeft > 0 && (
-                <View style={{ marginTop: -shellH * 0.09 }}>
-                  <SpinButton width={shellW * 0.66} onPress={onSpin} disabled={spinning} />
-                </View>
-              )}
+              {/* SPIN button — always in layout to prevent jump; hidden via opacity */}
+              <View style={{ marginTop: -shellH * 0.09, opacity: (!freeSpinsActive && spinsLeft > 0) ? 1 : 0 }}
+                    pointerEvents={(!freeSpinsActive && spinsLeft > 0) ? 'auto' : 'none'}>
+                <SpinButton width={shellW * 0.66} onPress={onSpin} disabled={spinning} />
+              </View>
             </View>
 
             <CoinCelebration trigger={coinTrigger} originY={originY} shellW={shellW} width={width} count={coinCount} />
@@ -827,14 +826,23 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     translateY.setValue(-90);
 
     Animated.parallel([
-      // Pan down into resting position — no background ever exposed
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 900,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: USE_NATIVE,
-      }),
-      // Logo + tiles sequence on top of the scroll
+      // translateY: quick entrance, then slow drift to bottom
+      Animated.sequence([
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: USE_NATIVE,
+        }),
+        Animated.delay(1400),
+        Animated.timing(translateY, {
+          toValue: -maxScroll,
+          duration: 4000,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: USE_NATIVE,
+        }),
+      ]),
+      // Logo + tiles sequence
       Animated.sequence([
         Animated.delay(120),
         Animated.sequence([
