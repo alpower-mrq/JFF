@@ -193,6 +193,23 @@ const BalanceCounter = React.memo(function BalanceCounter({ value, fontSize }: {
 const TopBar = React.memo(function TopBar({ total, onClose }: { total: number; onClose: () => void }) {
   const coin = 58;
   const pillH = 44;
+  const shimmerX = useRef(new Animated.Value(-coin)).current;
+
+  useEffect(() => {
+    const run = () => {
+      shimmerX.setValue(-40);
+      Animated.timing(shimmerX, {
+        toValue: 220,
+        duration: 600,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: USE_NATIVE,
+      }).start();
+    };
+    const t = setTimeout(run, 1500);
+    const id = setInterval(run, 5000);
+    return () => { clearTimeout(t); clearInterval(id); };
+  }, [shimmerX]);
+
   return (
     <View style={styles.topBar}>
       <View style={{ height: coin, justifyContent: 'center' }}>
@@ -205,8 +222,17 @@ const TopBar = React.memo(function TopBar({ total, onClose }: { total: number; o
           paddingLeft: coin * 0.64,
           paddingRight: 20,
           justifyContent: 'center',
+          overflow: 'hidden',
         }}>
           <BalanceCounter value={total} fontSize={pillH * 0.5} />
+          <Animated.View style={{
+            position: 'absolute',
+            top: -pillH * 0.2,
+            width: pillH * 0.55,
+            height: pillH * 1.4,
+            backgroundColor: 'rgba(255,255,255,0.38)',
+            transform: [{ translateX: shimmerX }, { rotate: '20deg' }],
+          }} />
         </View>
         <Image source={SYMBOLS.coin} style={{ position: 'absolute', left: 0, top: 0, width: coin, height: coin, zIndex: 2 }} resizeMode="contain" />
       </View>
@@ -550,6 +576,7 @@ export default function SlotMachine() {
     setCoinTrigger((t) => t + 1);
 
     if (isCoinJackpot) {
+      try { jackpot1.seekTo(0); jackpot1.play(); } catch {}
       setCoinJackpotTrigger((t) => t + 1);
       setSpinning(false);
       // Let the overlay animate, then launch free spins (busy stays true)
@@ -602,7 +629,7 @@ export default function SlotMachine() {
               <CloudBg width={bgW} height={bgH} />
             </Drift>
 
-            <View style={styles.content}>
+            <View style={[styles.content, { paddingTop: Math.max(80, height * 0.16) }]}>
               <View ref={machineRef} onLayout={onMachineLayout} style={{ width: shellW, height: shellH }}>
                 <ShellArea rect={REEL_WINDOW} style={{ backgroundColor: WINDOW }} />
                 <ShellArea rect={REEL_AREA} style={{ overflow: 'hidden', flexDirection: 'row' }}>
@@ -794,15 +821,14 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     logoScale.setValue(0);
     tileScales.forEach(a => a.setValue(0));
 
-    // Start world pushed down so tiles slide up into view
-    const START_OFFSET = 180;
-    translateY.setValue(START_OFFSET);
+    // Start slightly scrolled into the image (bg always covers screen), pan down to rest
+    translateY.setValue(-90);
 
     Animated.parallel([
-      // World scrolls up into resting position (top of bg image = top of screen)
+      // Pan down into resting position — no background ever exposed
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 1000,
+        duration: 900,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: USE_NATIVE,
       }),
@@ -1016,7 +1042,7 @@ const SpinButton = React.memo(function SpinButton({ width, onPress, disabled }: 
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, alignItems: 'center', paddingTop: 44 },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 20 },
   topBar: {
     position: 'absolute',
     top: 16,
