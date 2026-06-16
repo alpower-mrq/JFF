@@ -30,13 +30,13 @@ export default function WavingFlag({ shellW }: { shellW: number }) {
       Animated.sequence([
         Animated.timing(wave, {
           toValue: 1,
-          duration: 850,
+          duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: USE_NATIVE,
         }),
         Animated.timing(wave, {
           toValue: 0,
-          duration: 850,
+          duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: USE_NATIVE,
         }),
