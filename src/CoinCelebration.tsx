@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SYMBOLS } from './symbols';
 
-const MAX = 18;
+const MAX = 45;
 const USE_NATIVE = Platform.OS !== 'web';
 
 // Reel area fractions — must match SlotMachine.tsx
@@ -67,9 +67,9 @@ export default function CoinCelebration({
         startY: oy,
         burstDx: (Math.random() - 0.5) * reelW * 0.6,
         burstDy: -(20 + Math.random() * 40),
-        size: 24 + Math.random() * 14,
-        dur: 700 + Math.random() * 300,
-        delay: Math.floor(i / 3) * 80 + Math.random() * 40,
+        size: 11 + Math.random() * 7,
+        dur: 650 + Math.random() * 300,
+        delay: Math.floor(i / 3) * 45 + Math.random() * 30,
       };
     });
 

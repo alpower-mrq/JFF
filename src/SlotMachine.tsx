@@ -31,6 +31,7 @@ import { useAudioPlayer } from 'expo-audio';
 import Reel, { ReelHandle, Triple } from './Reel';
 import CoinCelebration from './CoinCelebration';
 import JackpotSymbol from './JackpotSymbol';
+import CoinJackpotOverlay from './CoinJackpotOverlay';
 import IntroCoinShower from './IntroCoinShower';
 import { SYMBOLS, SymbolKey, randomSymbol } from './symbols';
 
@@ -38,7 +39,8 @@ const USE_NATIVE = Platform.OS !== 'web';
 
 const SCROLL_SOUND = require('../assets/scrolling.mp3');
 const SUCCESS_SOUND = require('../assets/success.mp3');
-const JACKPOT_SOUND = require('../assets/jackpot.mp3');
+const JACKPOT_SOUND  = require('../assets/jackpot.mp3');
+const JACKPOT1_SOUND = require('../assets/jackpot1.mp3');
 const INTRO_SOUND = require('../assets/MrQ.m4a');
 const BG_SOUND = require('../assets/bgGrils.m4a');
 const SCROLL_START = 2.3;
@@ -84,7 +86,10 @@ const otherThan = (...exclude: SymbolKey[]): SymbolKey => {
 const gridFromMidRow = (mid: Triple): [Triple, Triple, Triple] =>
   [0, 1, 2].map((i) => [randomSymbol(), mid[i], randomSymbol()] as Triple) as [Triple, Triple, Triple];
 
-function decideOutcome(mustTriple: boolean): { tier: Tier; symbol: SymbolKey; grid: [Triple, Triple, Triple] } {
+function decideOutcome(mustTriple: boolean, mustCoinJackpot = false): { tier: Tier; symbol: SymbolKey; grid: [Triple, Triple, Triple]; isCoinJackpot: boolean } {
+  if (mustCoinJackpot) {
+    return { tier: 'triple', symbol: 'coin', grid: gridFromMidRow(['coin', 'coin', 'coin']), isCoinJackpot: true };
+  }
   let tier: Tier;
   if (mustTriple) tier = 'triple';
   else {
@@ -92,19 +97,19 @@ function decideOutcome(mustTriple: boolean): { tier: Tier; symbol: SymbolKey; gr
     tier = r < 0.15 ? 'triple' : r < 0.6 ? 'pair' : 'single';
   }
   if (tier === 'triple') {
-    const s = randomSymbol();
-    return { tier, symbol: s, grid: gridFromMidRow([s, s, s]) };
+    const s = otherThan('coin');
+    return { tier, symbol: s, grid: gridFromMidRow([s, s, s]), isCoinJackpot: false };
   }
   if (tier === 'pair') {
     const s = randomSymbol();
     const t = otherThan(s);
     const mid: Triple = Math.random() < 0.5 ? [s, s, t] : [t, s, s];
-    return { tier, symbol: s, grid: gridFromMidRow(mid) };
+    return { tier, symbol: s, grid: gridFromMidRow(mid), isCoinJackpot: false };
   }
   const a = randomSymbol();
   const b = otherThan(a);
   const c = otherThan(a, b);
-  return { tier, symbol: a, grid: gridFromMidRow([a, b, c]) };
+  return { tier, symbol: a, grid: gridFromMidRow([a, b, c]), isCoinJackpot: false };
 }
 
 const pct = (n: number) => `${n * 100}%` as DimensionValue;
@@ -232,7 +237,17 @@ export default function SlotMachine() {
   const [spinsLeft, setSpinsLeft]     = useState(SPINS_MAX);
   const [jackpotTrigger, setJackpotTrigger] = useState(0);
   const [jackpotSymbol, setJackpotSymbol]   = useState<SymbolKey | null>(null);
-  const spinsSinceTriple = useRef(0);
+  const [coinJackpotTrigger, setCoinJackpotTrigger] = useState(0);
+  const [freeSpinsActive, setFreeSpinsActive] = useState(false);
+  const [freeSpinsLeft,   setFreeSpinsLeft]   = useState(0);
+  const [freeSpinsAccum,  setFreeSpinsAccum]  = useState(0);
+  const freeSpinsActiveRef = useRef(false);
+  const freeSpinsAccumRef  = useRef(0);
+  const spinsSinceTriple      = useRef(0);
+  const spinsSinceCoinJackpot = useRef(0);
+  // ~30% chance of a jackpot this session; otherwise 999 (never fires within 5 spins)
+  const makeCoinJackpotTarget = () => Math.random() < 0.30 ? (3 + Math.floor(Math.random() * 2)) : 999;
+  const coinJackpotTarget     = useRef(makeCoinJackpotTarget());
   const busy = useRef(false);
 
   // Two-page navigation: 0 = slots, 1 = games.
@@ -246,11 +261,12 @@ export default function SlotMachine() {
   const letsgoY       = useRef(new Animated.Value(200)).current;
   const letsgoOpacity = useRef(new Animated.Value(0)).current;
 
-  const scroll  = useAudioPlayer(SCROLL_SOUND);
-  const success = useAudioPlayer(SUCCESS_SOUND);
-  const jackpot = useAudioPlayer(JACKPOT_SOUND);
-  const intro   = useAudioPlayer(INTRO_SOUND);
-  const bg      = useAudioPlayer(BG_SOUND);
+  const scroll   = useAudioPlayer(SCROLL_SOUND);
+  const success  = useAudioPlayer(SUCCESS_SOUND);
+  const jackpot  = useAudioPlayer(JACKPOT_SOUND);
+  const jackpot1 = useAudioPlayer(JACKPOT1_SOUND);
+  const intro    = useAudioPlayer(INTRO_SOUND);
+  const bg       = useAudioPlayer(BG_SOUND);
 
   const progress = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -262,16 +278,17 @@ export default function SlotMachine() {
     }).start();
   }, [spinsLeft, progress]);
 
-  const reveal = useRef(new Animated.Value(0)).current;
+  const reveal      = useRef(new Animated.Value(0)).current;
+  const machineScale = useRef(new Animated.Value(0.82)).current;
   useEffect(() => {
-    Animated.timing(reveal, {
-      toValue: 1,
-      duration: 900,
-      delay: 1100,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: USE_NATIVE,
-    }).start();
-  }, [reveal]);
+    Animated.sequence([
+      Animated.delay(400),
+      Animated.parallel([
+        Animated.timing(reveal, { toValue: 1, duration: 350, easing: Easing.out(Easing.quad), useNativeDriver: USE_NATIVE }),
+        Animated.spring(machineScale, { toValue: 1, tension: 70, friction: 7, useNativeDriver: USE_NATIVE }),
+      ]),
+    ]).start();
+  }, [reveal, machineScale]);
 
   const sunRotate = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -350,6 +367,7 @@ export default function SlotMachine() {
   const handleClose = useCallback(() => {
     try { intro.pause(); } catch {}
     try { bg.pause(); } catch {}
+    try { jackpot1.pause(); } catch {}
     if (Platform.OS === 'web') {
       // @ts-ignore
       window.location.reload();
@@ -362,6 +380,14 @@ export default function SlotMachine() {
       setCoinTrigger(0);
       setJackpotTrigger(0);
       setJackpotSymbol(null);
+      setCoinJackpotTrigger(0);
+      setFreeSpinsActive(false);
+      setFreeSpinsLeft(0);
+      setFreeSpinsAccum(0);
+      freeSpinsActiveRef.current = false;
+      freeSpinsAccumRef.current = 0;
+      spinsSinceCoinJackpot.current = 0;
+      coinJackpotTarget.current = makeCoinJackpotTarget();
       setShowLetsgo(false);
       spinsSinceTriple.current = 0;
       busy.current = false;
@@ -435,6 +461,54 @@ export default function SlotMachine() {
     },
   })).current;
 
+  // ── Free spins ───────────────────────────────────────────────────────────
+
+  const runFreeSpins = async () => {
+    const FREE_COUNT = 5;
+    freeSpinsActiveRef.current = true;
+    setFreeSpinsActive(true);
+    setFreeSpinsLeft(FREE_COUNT);
+    setFreeSpinsAccum(0);
+    freeSpinsAccumRef.current = 0;
+
+    // Loop scroll sound during free spins
+    try { scroll.loop = true; scroll.seekTo(SCROLL_START); scroll.play(); } catch {}
+
+    for (let i = 0; i < FREE_COUNT; i++) {
+      await new Promise<void>(res => setTimeout(res, 300));
+      setSpinning(true);
+      setWin(null);
+
+      const outcome = decideOutcome(false, false);
+      const durations = [380, 500, 620];
+      await Promise.all(reels.map((r, j) => r.current?.spin(outcome.grid[j], durations[j]) ?? Promise.resolve()));
+
+      const amount = PAYOUT[outcome.tier];
+      freeSpinsAccumRef.current += amount;
+      setFreeSpinsAccum(freeSpinsAccumRef.current);
+      setFreeSpinsLeft(FREE_COUNT - 1 - i);
+      setWin(amount);
+      setSpinning(false);
+    }
+
+    // Stop scroll sound, play jackpot1 as the payoff sting
+    try { scroll.loop = false; scroll.pause(); } catch {}
+    try { jackpot1.seekTo(0); jackpot1.play(); } catch {}
+    await new Promise<void>(res => setTimeout(res, 400));
+    setTotal(t => t + freeSpinsAccumRef.current);
+    setCoinCount(freeSpinsAccumRef.current);
+    setCoinTrigger(t => t + 1);
+
+    await new Promise<void>(res => setTimeout(res, 700));
+    setFreeSpinsActive(false);
+    freeSpinsActiveRef.current = false;
+    setFreeSpinsLeft(0);
+    setWin(null);
+    busy.current = false;
+
+    if (spinsLeftRef.current === 0) triggerLetsGo();
+  };
+
   // ── Spin ─────────────────────────────────────────────────────────────────
 
   const onSpin = async () => {
@@ -449,8 +523,16 @@ export default function SlotMachine() {
 
     try { scroll.seekTo(SCROLL_START); scroll.play(); } catch {}
 
-    const mustTriple = spinsSinceTriple.current >= 4;
-    const outcome = decideOutcome(mustTriple);
+    const mustCoinJackpot = spinsSinceCoinJackpot.current >= coinJackpotTarget.current;
+    const mustTriple = !mustCoinJackpot && spinsSinceTriple.current >= 4;
+    const outcome = decideOutcome(mustTriple, mustCoinJackpot);
+
+    if (mustCoinJackpot) {
+      spinsSinceCoinJackpot.current = 0;
+      coinJackpotTarget.current = 3 + Math.floor(Math.random() * 2);
+    } else {
+      spinsSinceCoinJackpot.current += 1;
+    }
     spinsSinceTriple.current = outcome.tier === 'triple' ? 0 : spinsSinceTriple.current + 1;
 
     const durations = [1200, 1650, 2100];
@@ -460,22 +542,32 @@ export default function SlotMachine() {
 
     try { scroll.pause(); } catch {}
 
-    const amount = PAYOUT[outcome.tier];
+    const isCoinJackpot = outcome.isCoinJackpot;
+    const amount = isCoinJackpot ? 200 : PAYOUT[outcome.tier];
     setWin(amount);
     setTotal((t) => t + amount);
     setCoinCount(amount);
     setCoinTrigger((t) => t + 1);
-    try { success.seekTo(0); success.play(); } catch {}
-    if (outcome.tier === 'triple') {
-      try { jackpot.seekTo(0); jackpot.play(); } catch {}
-      setJackpotSymbol(outcome.symbol);
-      setJackpotTrigger((t) => t + 1);
-    }
-    setSpinning(false);
-    busy.current = false;
 
-    // Last spin used → bounce in LET'S GO then shoot to games.
-    if (newSpins === 0) triggerLetsGo();
+    if (isCoinJackpot) {
+      setCoinJackpotTrigger((t) => t + 1);
+      setSpinning(false);
+      // Let the overlay animate, then launch free spins (busy stays true)
+      setTimeout(runFreeSpins, 1600);
+    } else {
+      try { success.seekTo(0); success.play(); } catch {}
+      if (outcome.tier === 'triple') {
+        try { jackpot.seekTo(0); jackpot.play(); } catch {}
+        setJackpotSymbol(outcome.symbol);
+        setJackpotTrigger((t) => t + 1);
+      }
+    }
+
+    if (!isCoinJackpot) {
+      setSpinning(false);
+      busy.current = false;
+      if (newSpins === 0) triggerLetsGo();
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -491,7 +583,7 @@ export default function SlotMachine() {
 
         {/* ── Page 0: Slot machine ── */}
         <View style={{ height }}>
-          <Animated.View style={{ flex: 1, opacity: reveal }}>
+          <Animated.View style={{ flex: 1, opacity: reveal, transform: [{ scale: machineScale }] }}>
 
             {/* Rotating sunburst — plain PNG, no SVG parsing overhead */}
             <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', alignItems: 'center', justifyContent: 'center' }]}>
@@ -524,20 +616,31 @@ export default function SlotMachine() {
                 <ShellArea rect={COIN_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
                   <WinBadge win={win} size={shellW * 0.085} />
                 </ShellArea>
-                <ShellArea rect={SPINS_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.072, letterSpacing: 1.5, marginBottom: shellH * 0.014 }}>
-                    {spinsLeft}  SPINS LEFT
-                  </Text>
-                  <View style={{ width: '90%', height: shellH * 0.03, borderRadius: 999, backgroundColor: TRACK, overflow: 'hidden' }}>
-                    <Animated.View style={{ width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), height: '100%', borderRadius: 999, backgroundColor: GOLD, overflow: 'hidden' }}>
-                      <View style={{ position: 'absolute', top: '15%', left: shellH * 0.013, right: shellH * 0.013, height: '30%', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.5)' }} />
-                    </Animated.View>
-                  </View>
-                </ShellArea>
+                {freeSpinsActive ? (
+                  <ShellArea rect={SPINS_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: GOLD, fontFamily: FONT, fontSize: shellW * 0.058, letterSpacing: 2, marginBottom: shellH * 0.008 }}>
+                      {freeSpinsLeft}  FREE SPINS
+                    </Text>
+                    <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.082, letterSpacing: 1 }}>
+                      +{freeSpinsAccum}
+                    </Text>
+                  </ShellArea>
+                ) : (
+                  <ShellArea rect={SPINS_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#fff', fontFamily: FONT, fontSize: shellW * 0.072, letterSpacing: 1.5, marginBottom: shellH * 0.014 }}>
+                      {spinsLeft}  SPINS LEFT
+                    </Text>
+                    <View style={{ width: '90%', height: shellH * 0.03, borderRadius: 999, backgroundColor: TRACK, overflow: 'hidden' }}>
+                      <Animated.View style={{ width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), height: '100%', borderRadius: 999, backgroundColor: GOLD, overflow: 'hidden' }}>
+                        <View style={{ position: 'absolute', top: '15%', left: shellH * 0.013, right: shellH * 0.013, height: '30%', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.5)' }} />
+                      </Animated.View>
+                    </View>
+                  </ShellArea>
+                )}
               </View>
 
-              {/* SPIN button — hidden when out of spins */}
-              {spinsLeft > 0 && (
+              {/* SPIN button — hidden during free spins or when out of spins */}
+              {!freeSpinsActive && spinsLeft > 0 && (
                 <View style={{ marginTop: -shellH * 0.09 }}>
                   <SpinButton width={shellW * 0.66} onPress={onSpin} disabled={spinning} />
                 </View>
@@ -546,6 +649,7 @@ export default function SlotMachine() {
 
             <CoinCelebration trigger={coinTrigger} originY={originY} shellW={shellW} width={width} count={coinCount} />
             <JackpotSymbol trigger={jackpotTrigger} symbol={jackpotSymbol} size={shellW * 0.46} centerX={width / 2} centerY={originY} />
+            <CoinJackpotOverlay trigger={coinJackpotTrigger} shellW={shellW} width={width} originY={originY} />
           </Animated.View>
 
           {/* LET'S GO! — bounces in over the machine on the last spin */}
@@ -590,6 +694,7 @@ const LOWER_BG   = require('../assets/lower/lower_bg.png');
 const GAME_WHEEL  = require('../assets/lower/wheel.png');
 const GAME_ARCADE = require('../assets/lower/arcade.png');
 const GAME_VAULT  = require('../assets/lower/vault.png');
+const GAME_FLIP   = require('../assets/lower/flip.png');
 const GAME_SCRATCH = require('../assets/lower/scratch.png');
 const GAME_MERCH  = require('../assets/lower/merch.png');
 
@@ -611,6 +716,7 @@ const GAME_TILES = [
   { src: GAME_WHEEL,   x: 136, y: 315, w: S, h: S, label: 'Q Wheel',    subtitle: 'Spin & Win' },
   { src: GAME_ARCADE,  x:   4, y: 402, w: S, h: S, label: 'Arcade',     subtitle: 'Play & Win' },
   { src: GAME_VAULT,   x: 259, y: 413, w: S, h: S, label: 'Q Vault',    subtitle: 'Unlock Rewards' },
+  { src: GAME_FLIP,    x: 130, y: 505, w: 137, h: 137, label: 'Flip Coin',  subtitle: 'Win Coins' },
   { src: GAME_SCRATCH, x:   5, y: 622, w: S, h: S, label: 'Scratch',    subtitle: 'Match & Win' },
   { src: GAME_MERCH,   x: 267, y: 618, w: S, h: S, label: 'Merch Shop', subtitle: 'Prizes & Goodies' },
 ] as const;
@@ -620,14 +726,13 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   innerScrollRef: React.MutableRefObject<number>;
   trigger: number;
 }) {
-  const INITIAL_SCROLL = 70;
   const BG_NATIVE_H = width * (1590 / 752);           // background at natural aspect ratio
-  const WORLD_NATIVE_H = Math.max(height + INITIAL_SCROLL, BG_NATIVE_H); // container tall enough to fill screen
+  const WORLD_NATIVE_H = Math.max(height, BG_NATIVE_H);
   const maxScroll = WORLD_NATIVE_H - height;
   const maxScrollRef = useRef(maxScroll);
   maxScrollRef.current = maxScroll;
 
-  const translateY = useRef(new Animated.Value(-INITIAL_SCROLL)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
   const baseY = useRef(0);
 
   const [modalIndex, setModalIndex] = useState<number | null>(null);
@@ -689,15 +794,15 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     logoScale.setValue(0);
     tileScales.forEach(a => a.setValue(0));
 
-    // Start world pushed down so tiles are below the fold, then slowly reveal
-    const START_OFFSET = 220;
+    // Start world pushed down so tiles slide up into view
+    const START_OFFSET = 180;
     translateY.setValue(START_OFFSET);
 
     Animated.parallel([
-      // World scrolls up slowly into resting position
+      // World scrolls up into resting position (top of bg image = top of screen)
       Animated.timing(translateY, {
-        toValue: -INITIAL_SCROLL,
-        duration: 1100,
+        toValue: 0,
+        duration: 1000,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: USE_NATIVE,
       }),
@@ -731,6 +836,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   const scrollPan = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, gs) => {
       if (Math.abs(gs.dy) <= 8 || Math.abs(gs.dy) <= Math.abs(gs.dx)) return false;
+      // Block swipe-down (which would pull content above top of image into view)
       if (gs.dy > 0 && ((translateY as any)._value ?? 0) >= 0) return false;
       return true;
     },
@@ -754,7 +860,7 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
   return (
     <View style={{ flex: 1, overflow: 'hidden' }} {...scrollPan.panHandlers}>
       <Animated.View style={{ transform: [{ translateY }] }}>
-        <View style={{ width, height: WORLD_NATIVE_H }}>
+        <View style={{ width, height: WORLD_NATIVE_H, backgroundColor: '#0a1f6e' }}>
           {/* Background */}
           <Image source={LOWER_BG} style={{ width, height: BG_NATIVE_H }} resizeMode="stretch" />
 
