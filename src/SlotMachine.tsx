@@ -32,6 +32,7 @@ import Reel, { ReelHandle, Triple } from './Reel';
 import CoinCelebration from './CoinCelebration';
 import JackpotSymbol from './JackpotSymbol';
 import CoinJackpotOverlay from './CoinJackpotOverlay';
+import WavingFlag from './WavingFlag';
 import IntroCoinShower from './IntroCoinShower';
 import { SYMBOLS, SymbolKey, randomSymbol } from './symbols';
 
@@ -640,6 +641,7 @@ export default function SlotMachine() {
                 <View style={{ position: 'absolute', left: 0, top: 0, width: shellW, height: shellH, pointerEvents: 'none' }}>
                   <SlotShell width={shellW} height={shellH} />
                 </View>
+                <WavingFlag shellW={shellW} />
                 <ShellArea rect={COIN_AREA} style={{ alignItems: 'center', justifyContent: 'center' }}>
                   <WinBadge win={win} size={shellW * 0.085} />
                 </ShellArea>
