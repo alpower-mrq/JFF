@@ -822,22 +822,16 @@ function GamesPage({ shellW, width, height, innerScrollRef, trigger }: {
     logoScale.setValue(0);
     tileScales.forEach(a => a.setValue(0));
 
-    // Start slightly scrolled into the image (bg always covers screen), pan down to rest
-    translateY.setValue(-90);
+    // Start at top, wait for logo/tiles, then slowly pan down
+    translateY.setValue(0);
 
     Animated.parallel([
-      // translateY: quick entrance, then slow drift to bottom
+      // translateY: hold at top, then slow drift to bottom
       Animated.sequence([
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: USE_NATIVE,
-        }),
-        Animated.delay(1400),
+        Animated.delay(1800),
         Animated.timing(translateY, {
           toValue: -maxScroll,
-          duration: 4000,
+          duration: 5000,
           easing: Easing.inOut(Easing.cubic),
           useNativeDriver: USE_NATIVE,
         }),
