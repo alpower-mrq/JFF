@@ -35,6 +35,7 @@ import CoinJackpotOverlay from './CoinJackpotOverlay';
 import WavingFlag from './WavingFlag';
 import IntroCoinShower from './IntroCoinShower';
 import { SYMBOLS, SymbolKey, randomSymbol } from './symbols';
+import { QOIN_SVG } from './qoin';
 
 const USE_NATIVE = Platform.OS !== 'web';
 
@@ -235,7 +236,7 @@ const TopBar = React.memo(function TopBar({ total, onClose }: { total: number; o
             transform: [{ translateX: shimmerX }, { rotate: '20deg' }],
           }} />
         </View>
-        <Image source={SYMBOLS.coin} style={{ position: 'absolute', left: 0, top: 0, width: coin, height: coin, zIndex: 2 }} resizeMode="contain" />
+        <SvgXml xml={QOIN_SVG} width={coin} height={coin} style={{ position: 'absolute', left: 0, top: 0, zIndex: 2 }} />
       </View>
       <Pressable onPress={onClose} hitSlop={12}>
         <CloseIcon width={22} height={22} />

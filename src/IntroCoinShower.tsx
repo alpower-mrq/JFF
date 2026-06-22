@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, View, useWindowDimensions } from 'react-native';
-import { SYMBOLS } from './symbols';
+import { SvgXml } from 'react-native-svg';
+import { QOIN_SVG } from './qoin';
 
 const USE_NATIVE = Platform.OS !== 'web';
 const DURATION = 2400;
@@ -104,10 +105,8 @@ export default function IntroCoinShower({ onDone }: { onDone?: () => void }) {
           extrapolate: 'clamp',
         });
         return (
-          <Animated.Image
+          <Animated.View
             key={i}
-            source={SYMBOLS.coin}
-            resizeMode="contain"
             style={{
               position: 'absolute',
               left: co.x,
@@ -116,7 +115,9 @@ export default function IntroCoinShower({ onDone }: { onDone?: () => void }) {
               height: co.size,
               transform: [{ translateY }, { rotate }],
             }}
-          />
+          >
+            <SvgXml xml={QOIN_SVG} width={co.size} height={co.size} />
+          </Animated.View>
         );
       })}
     </View>

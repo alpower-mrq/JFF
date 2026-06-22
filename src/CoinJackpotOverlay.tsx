@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, View } from 'react-native';
-import { SYMBOLS } from './symbols';
+import { SvgXml } from 'react-native-svg';
+import { QOIN_SVG } from './qoin';
 
 const USE_NATIVE = Platform.OS !== 'web';
 
@@ -95,10 +96,8 @@ export default function CoinJackpotOverlay({
 
       {/* 3 scaled-up coin icons */}
       {coinCenters.map((cx, i) => (
-        <Animated.Image
+        <Animated.View
           key={i}
-          source={SYMBOLS.coin}
-          resizeMode="contain"
           style={{
             position: 'absolute',
             left: cx - coinSize / 2,
@@ -108,7 +107,9 @@ export default function CoinJackpotOverlay({
             opacity,
             transform: [{ scale: coinScale }],
           }}
-        />
+        >
+          <SvgXml xml={QOIN_SVG} width={coinSize} height={coinSize} />
+        </Animated.View>
       ))}
     </View>
   );

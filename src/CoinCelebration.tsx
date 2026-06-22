@@ -6,7 +6,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SYMBOLS } from './symbols';
+import { SvgXml } from 'react-native-svg';
+import { QOIN_SVG } from './qoin';
 
 const MAX = 45;
 const USE_NATIVE = Platform.OS !== 'web';
@@ -111,10 +112,8 @@ export default function CoinCelebration({
           outputRange: [0, 1, 1, 0],
         });
         return (
-          <Animated.Image
+          <Animated.View
             key={i}
-            source={SYMBOLS.coin}
-            resizeMode="contain"
             style={{
               position: 'absolute',
               left: -p.size / 2,
@@ -124,7 +123,9 @@ export default function CoinCelebration({
               opacity,
               transform: [{ translateX }, { translateY }, { scale }],
             }}
-          />
+          >
+            <SvgXml xml={QOIN_SVG} width={p.size} height={p.size} />
+          </Animated.View>
         );
       })}
     </View>
